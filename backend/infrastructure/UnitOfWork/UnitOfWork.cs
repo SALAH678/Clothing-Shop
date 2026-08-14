@@ -1,5 +1,5 @@
 ﻿using Application.Common.Interfaces;
-using Application.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 using infrastructure.Data;
 
 namespace infrastructure.UnitOfWork;
