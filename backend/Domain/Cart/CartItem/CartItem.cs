@@ -1,5 +1,6 @@
 using Domain.Common;
 using Domain.Common.Results;
+using Domain.Products.Variants;
 
 namespace Domain.Carts.CartItems;
 
@@ -10,6 +11,7 @@ public class CartItem : AuditableEntity
     public int Quantity { get; private set; }
 
     public Cart Cart { get; private set; } = null!;
+    public Variant Variant { get; private set; } = null!;
 
     protected CartItem()
     {

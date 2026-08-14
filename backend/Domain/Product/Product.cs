@@ -1,3 +1,4 @@
+using Domain.Categories;
 using Domain.Common;
 using Domain.Common.Results;
 using Domain.Products.Images;
@@ -18,6 +19,8 @@ public class Product : AuditableEntity
 
     public IReadOnlyCollection<Variant> Variants => _variants.AsReadOnly();
     public IReadOnlyCollection<Image>? Images => _images?.AsReadOnly();
+
+    public Category Category { get; private set; } = null!;
 
     protected Product()
     {
@@ -110,14 +113,14 @@ public class Product : AuditableEntity
         if (imageResult.Value.IsMain)
             ClearMainImage();
 
-        _images.Add(imageResult.Value);
+        _images?.Add(imageResult.Value);
 
         return imageResult.Value;
     }
 
     public Result<Updated> SetMainImage(Guid imageId)
     {
-        Image? image = _images.FirstOrDefault(image => image.Id == imageId);
+        Image? image = _images?.FirstOrDefault(image => image.Id == imageId);
 
         if (image is null)
             return ProductErrors.ImageNotFound;
@@ -129,19 +132,19 @@ public class Product : AuditableEntity
 
     public Result<Deleted> RemoveImage(Guid imageId)
     {
-        Image? image = _images.FirstOrDefault(image => image.Id == imageId);
+        Image? image = _images?.FirstOrDefault(image => image.Id == imageId);
 
         if (image is null)
             return ProductErrors.ImageNotFound;
 
-        _images.Remove(image);
+        _images?.Remove(image);
 
         return Result.Deleted;
     }
 
     private void ClearMainImage()
     {
-        foreach (Image image in _images.Where(image => image.IsMain))
+        foreach (Image image in _images!.Where(image => image.IsMain))
             image.UnmarkAsMain();
     }
 

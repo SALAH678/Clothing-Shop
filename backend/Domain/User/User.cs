@@ -1,7 +1,9 @@
+using Domain.Carts;
 using Domain.Common;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
 using Domain.Common.ValueObjects.PhoneNumber;
+using Domain.Purchases;
 using Domain.Users.Accounts;
 using Domain.Users.Enum;
 using Domain.Users.RefreshTokens;
@@ -22,10 +24,14 @@ public class User : AuditableEntity
     private readonly List<Account> _accounts = [];
     private readonly List<RefreshToken>? _refreshTokens = [];
     private readonly List<VerificationToken>? _verificationTokens = [];
+    private readonly List<Purchase>? purchases = [];
 
     public IReadOnlyCollection<Account> Accounts => _accounts.AsReadOnly();
     public IReadOnlyCollection<RefreshToken>? RefreshTokens => _refreshTokens?.AsReadOnly();
     public IReadOnlyCollection<VerificationToken>? VerificationTokens => _verificationTokens?.AsReadOnly();
+    public IReadOnlyCollection<Purchase>? Purchases => purchases?.AsReadOnly();
+
+    public Cart Cart { get; private set; } = null!;
 
     protected User()
     {

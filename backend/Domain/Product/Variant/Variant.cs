@@ -1,5 +1,7 @@
+using Domain.Carts.CartItems;
 using Domain.Common;
 using Domain.Common.Results;
+using Domain.Purchases.PurchaseItems;
 
 namespace Domain.Products.Variants;
 
@@ -9,6 +11,12 @@ public class Variant : AuditableEntity
     public string Size { get; private set; } = null!;
     public string Color { get; private set; } = null!;
     public int StockQuantity { get; private set; }
+
+    private readonly List<PurchaseItem>? _purchaseItems = [];
+    private readonly List<CartItem>? _cartItems = [];
+
+    public IReadOnlyCollection<PurchaseItem>? PurchaseItems => _purchaseItems?.AsReadOnly();
+    public IReadOnlyCollection<CartItem>? CartItems => _cartItems?.AsReadOnly();
 
     public Product Product { get; private set; } = null!;
 
