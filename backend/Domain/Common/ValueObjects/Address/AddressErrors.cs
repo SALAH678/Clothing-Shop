@@ -28,39 +28,15 @@ public static class AddressErrors
         code: "Address_City_TooLong",
         description: "City cannot exceed 100 characters.");
 
-    public static Error StateRequired => Error.Validation(
-        code: "Address_State_Required",
-        description: "State/Province is required.");
+    public static Error WilayaRequired => Error.Validation(
+        code: "Address_Wilaya_Required",
+        description: "Wilaya is required.");
 
-    public static Error StateTooShort => Error.Validation(
-        code: "Address_State_TooShort",
-        description: "State/Province must be at least 2 characters long.");
+    public static Error WilayaTooShort => Error.Validation(
+        code: "Address_Wilaya_TooShort",
+        description: "Wilaya must be at least 2 characters long.");
 
-    public static Error StateTooLong => Error.Validation(
-        code: "Address_State_TooLong",
-        description: "State/Province cannot exceed 100 characters.");
-
-    public static Error PostalCodeRequired => Error.Validation(
-        code: "Address_PostalCode_Required",
-        description: "Postal code is required.");
-
-    public static Error PostalCodeTooShort => Error.Validation(
-        code: "Address_PostalCode_TooShort",
-        description: "Postal code must be at least 2 characters long.");
-
-    public static Error PostalCodeTooLong => Error.Validation(
-        code: "Address_PostalCode_TooLong",
-        description: "Postal code cannot exceed 20 characters.");
-
-    public static Error CountryRequired => Error.Validation(
-        code: "Address_Country_Required",
-        description: "Country is required.");
-
-    public static Error CountryTooShort => Error.Validation(
-        code: "Address_Country_TooShort",
-        description: "Country must be at least 2 characters long.");
-
-    public static Error CountryTooLong => Error.Validation(
-        code: "Address_Country_TooLong",
-        description: "Country cannot exceed 100 characters.");
+    public static Error WilayaTooLong => Error.Validation(
+        code: "Address_Wilaya_TooLong",
+        description: "Wilaya cannot exceed 100 characters.");
 }

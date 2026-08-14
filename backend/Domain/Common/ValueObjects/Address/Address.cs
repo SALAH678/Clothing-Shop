@@ -5,23 +5,17 @@ namespace Domain.Common.ValueObjects.Address;
 public class Address
 {
     public string Street { get; private set; } = null!;
-    public string? Line2 { get; private set; }
     public string City { get; private set; } = null!;
-    public string State { get; private set; } = null!;
-    public string PostalCode { get; private set; } = null!;
-    public string Country { get; private set; } = null!;
+    public string Wilaya { get; private set; } = null!;
 
-    private Address(string street, string? line2, string city, string state, string postalCode, string country)
+    private Address(string street, string city, string wilaya)
     {
         Street = street;
-        Line2 = line2;
         City = city;
-        State = state;
-        PostalCode = postalCode;
-        Country = country;
+        Wilaya = wilaya;
     }
 
-    public static Result<Address> Create(string? street, string? line2, string? city, string? state, string? postalCode, string? country)
+    public static Result<Address> Create(string? street, string? city, string? wilaya)
     {
         if (string.IsNullOrWhiteSpace(street))
             return AddressErrors.StreetRequired;
@@ -29,21 +23,12 @@ public class Address
         if (string.IsNullOrWhiteSpace(city))
             return AddressErrors.CityRequired;
 
-        if (string.IsNullOrWhiteSpace(state))
-            return AddressErrors.StateRequired;
-
-        if (string.IsNullOrWhiteSpace(postalCode))
-            return AddressErrors.PostalCodeRequired;
-
-        if (string.IsNullOrWhiteSpace(country))
-            return AddressErrors.CountryRequired;
+        if (string.IsNullOrWhiteSpace(wilaya))
+            return AddressErrors.WilayaRequired;
 
         string preparedStreet = street.Trim();
-        string? preparedLine2 = string.IsNullOrWhiteSpace(line2) ? null : line2.Trim();
         string preparedCity = city.Trim();
-        string preparedState = state.Trim();
-        string preparedPostalCode = postalCode.Trim();
-        string preparedCountry = country.Trim();
+        string preparedWilaya = wilaya.Trim();
 
         if (preparedStreet.Length < 5)
             return AddressErrors.StreetTooShort;
@@ -57,24 +42,12 @@ public class Address
         if (preparedCity.Length > 100)
             return AddressErrors.CityTooLong;
 
-        if (preparedState.Length < 2)
-            return AddressErrors.StateTooShort;
+        if (preparedWilaya.Length < 2)
+            return AddressErrors.WilayaTooShort;
 
-        if (preparedState.Length > 100)
-            return AddressErrors.StateTooLong;
+        if (preparedWilaya.Length > 100)
+            return AddressErrors.WilayaTooLong;
 
-        if (preparedPostalCode.Length < 2)
-            return AddressErrors.PostalCodeTooShort;
-
-        if (preparedPostalCode.Length > 20)
-            return AddressErrors.PostalCodeTooLong;
-
-        if (preparedCountry.Length < 2)
-            return AddressErrors.CountryTooShort;
-
-        if (preparedCountry.Length > 100)
-            return AddressErrors.CountryTooLong;
-
-        return new Address(preparedStreet, preparedLine2, preparedCity, preparedState, preparedPostalCode, preparedCountry);
+        return new Address(preparedStreet, preparedCity, preparedWilaya);
     }
 }
