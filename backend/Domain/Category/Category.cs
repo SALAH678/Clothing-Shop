@@ -73,19 +73,19 @@ public class Category : AuditableEntity
         if (childResult.IsError)
             return childResult.Errors;
 
-        _children.Add(childResult.Value);
+        _subcategories?.Add(childResult.Value);
 
         return childResult.Value;
     }
 
     public Result<Deleted> RemoveChild(Guid childCategoryId)
     {
-        Category? child = _children.FirstOrDefault(category => category.Id == childCategoryId);
+        Category? child = _subcategories?.FirstOrDefault(category => category.Id == childCategoryId);
 
         if (child is null)
             return CategoryErrors.ChildCategoryNotFound;
 
-        _children.Remove(child);
+        _subcategories?.Remove(child);
 
         return Result.Deleted;
     }
@@ -98,9 +98,21 @@ public class Category : AuditableEntity
         if (string.IsNullOrWhiteSpace(imageUrl))
             return CategoryErrors.ImageUrlRequired;
 
+        if (imageUrl.Length > 500)
+            return CategoryErrors.ImageUrlTooLong;
+
+        if (!IsValidUrl(imageUrl))
+            return CategoryErrors.InvalidImageUrl;
+
         if (parentCategoryId == Guid.Empty)
             return CategoryErrors.InvalidParentCategoryId;
 
         return null;
+    }
+
+    private static bool IsValidUrl(string url)
+    {
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
+               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }
