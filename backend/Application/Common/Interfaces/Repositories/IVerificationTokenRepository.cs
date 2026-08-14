@@ -1,6 +1,6 @@
 using Domain.Users.VerificationTokens;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IVerificationTokenRepository : IRepository<VerificationToken>
 {

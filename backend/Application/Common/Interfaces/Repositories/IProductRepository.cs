@@ -1,6 +1,6 @@
 using Domain.Products;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IProductRepository : IRepository<Product>
 {

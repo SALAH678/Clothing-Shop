@@ -1,6 +1,6 @@
 using Domain.Common;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IRepository<TEntity>
     where TEntity : Entity

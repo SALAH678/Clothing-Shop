@@ -1,4 +1,4 @@
-using Application.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 using Domain.Users.VerificationTokens;
 using infrastructure.Data;
 using infrastructure.Repositories.Abstractions;

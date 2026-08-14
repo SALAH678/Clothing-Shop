@@ -1,6 +1,6 @@
 using Domain.Carts.CartItems;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface ICartItemRepository : IRepository<CartItem>
 {

@@ -1,6 +1,6 @@
 using Domain.Products.Variants;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IVariantRepository : IRepository<Variant>
 {

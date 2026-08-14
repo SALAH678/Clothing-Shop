@@ -1,6 +1,6 @@
 using Domain.Carts;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface ICartRepository : IRepository<Cart>
 {

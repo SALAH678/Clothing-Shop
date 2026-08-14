@@ -1,6 +1,6 @@
 using Domain.Users.RefreshTokens;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IRefreshTokenRepository : IRepository<RefreshToken>
 {

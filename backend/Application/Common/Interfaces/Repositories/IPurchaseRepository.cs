@@ -1,6 +1,6 @@
 using Domain.Purchases;
 
-namespace Application.Interfaces.Repositories;
+namespace Application.Common.Interfaces.Repositories;
 
 public interface IPurchaseRepository : IRepository<Purchase>
 {

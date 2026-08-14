@@ -1,4 +1,4 @@
-using Application.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 using Domain.Products.Images;
 using infrastructure.Data;
 using infrastructure.Repositories.Abstractions;
