@@ -7,7 +7,7 @@ namespace Domain.Categories;
 public class Category : AuditableEntity
 {
     public string CategoryName { get; private set; } = null!;
-    public string ImageUrl { get; private set; } = null!;
+    public string? ImageUrl { get; private set; } 
     public Guid? ParentCategoryId { get; private set; }
 
     private readonly List<Category>? _subcategories = [];
@@ -22,7 +22,7 @@ public class Category : AuditableEntity
     {
     }
 
-    protected Category(string categoryName, string imageUrl, Guid? parentCategoryId)
+    protected Category(string categoryName, string? imageUrl, Guid? parentCategoryId)
         : base(Guid.Empty)
     {
         CategoryName = categoryName;
@@ -30,7 +30,7 @@ public class Category : AuditableEntity
         ParentCategoryId = parentCategoryId;
     }
 
-    public static Result<Category> Create(string? categoryName, string? imageUrl, Guid? parentCategoryId = null)
+    public static Result<Category> Create(string? categoryName, string? imageUrl = null, Guid? parentCategoryId = null)
     {
         Error? error = Validate(categoryName, imageUrl, parentCategoryId);
 
@@ -95,14 +95,17 @@ public class Category : AuditableEntity
         if (string.IsNullOrWhiteSpace(categoryName))
             return CategoryErrors.CategoryNameRequired;
 
-        if (string.IsNullOrWhiteSpace(imageUrl))
-            return CategoryErrors.ImageUrlRequired;
+        if(imageUrl is not null)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return CategoryErrors.ImageUrlRequired;
 
-        if (imageUrl.Length > 500)
-            return CategoryErrors.ImageUrlTooLong;
+            if (imageUrl.Length > 500)
+                return CategoryErrors.ImageUrlTooLong;
 
-        if (!IsValidUrl(imageUrl))
-            return CategoryErrors.InvalidImageUrl;
+            if (!IsValidUrl(imageUrl))
+                return CategoryErrors.InvalidImageUrl;
+        }
 
         if (parentCategoryId == Guid.Empty)
             return CategoryErrors.InvalidParentCategoryId;
