@@ -1,4 +1,4 @@
-using Application.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 
 namespace Application.Common.Interfaces;
 
