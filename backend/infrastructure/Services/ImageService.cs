@@ -1,4 +1,5 @@
-﻿using Domain.Common.Results;
+﻿using Application.Common.Interfaces.Services;
+using Domain.Common.Results;
 using Domain.Products.Images;
 using Microsoft.Extensions.Configuration;
 
