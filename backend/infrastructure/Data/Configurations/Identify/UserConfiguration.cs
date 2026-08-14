@@ -46,7 +46,7 @@ public class UserConfiguration : AuditableEntityConfiguration<User>
                value => Email.Create(value).Value)
             .HasMaxLength(200);
 
-        builder.HasIndex(user => user.Email.Value)
+        builder.HasIndex(user => user.Email)
             .IsUnique()
             .HasDatabaseName("IX_User_Email");
 

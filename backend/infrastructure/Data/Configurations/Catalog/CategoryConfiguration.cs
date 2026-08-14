@@ -25,11 +25,11 @@ public class CategoryConfiguration : AuditableEntityConfiguration<Category>
             .IsRequired(false);
 
         builder.HasOne(category => category.ParentCategory)
-            .WithMany(parent => parent.SubCategories)
+            .WithMany(parent => parent.Subcategories)
             .HasForeignKey(category => category.ParentCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Navigation(category => category.SubCategories)
+        builder.Navigation(category => category.Subcategories)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(category => category.Products)

@@ -13,10 +13,10 @@ public class Category : AuditableEntity
     private readonly List<Category>? _subcategories = [];
     private readonly List<Product>? _products = [];
 
-    public IReadOnlyCollection<Category>? SubCategories => _subcategories?.AsReadOnly();
+    public IReadOnlyCollection<Category>? Subcategories => _subcategories?.AsReadOnly();
     public IReadOnlyCollection<Product>? Products => _products?.AsReadOnly();
 
-    public Category ParentCategory { get; private set; } = null!;
+    public Category? ParentCategory { get; private set; }
 
     protected Category()
     {
