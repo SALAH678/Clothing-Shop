@@ -3,7 +3,7 @@ using Domain.Users.Accounts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace infrastructure.Data.Configurations;
+namespace infrastructure.Data.Configurations.Identify;
 
 public class AccountConfiguration : AuditableEntityConfiguration<Account>
 {

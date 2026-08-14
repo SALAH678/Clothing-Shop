@@ -2,7 +2,7 @@ using Domain.Carts.CartItems;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace infrastructure.Data.Configurations;
+namespace infrastructure.Data.Configurations.Shopping;
 
 public class CartItemConfiguration : AuditableEntityConfiguration<CartItem>
 {
