@@ -18,7 +18,7 @@ public class UserConfiguration : AuditableEntityConfiguration<User>
         {
             t.HasCheckConstraint(
                 name: "CK_USER_ROLE",
-                sql: "\"Role\" IN ('Admin', 'Customer')"
+                sql: "\"UserRole\" IN ('Admin', 'Customer')"
                 );
         });
 
