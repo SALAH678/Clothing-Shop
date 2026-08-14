@@ -11,7 +11,7 @@ public class VerificationTokenConfiguration : AuditableEntityConfiguration<Verif
     {
         base.Configure(builder);
 
-        builder.ToTable("VerificationTokens", schema: "Identity", t =>
+        builder.ToTable("VerificationTokens", schema: "identity", t =>
         {
             t.HasCheckConstraint(
                 name: "CK_VerificationTokens_Type",

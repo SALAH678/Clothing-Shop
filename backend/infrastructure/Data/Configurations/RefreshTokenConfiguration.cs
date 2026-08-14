@@ -10,7 +10,7 @@ public class RefreshTokenConfiguration : AuditableEntityConfiguration<RefreshTok
     {
         base.Configure(builder);
 
-        builder.ToTable("RefreshTokens", schema: "Identity");
+        builder.ToTable("RefreshTokens", schema: "identity");
 
         builder.Property(c => c.UserId)
             .IsRequired();

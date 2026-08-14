@@ -11,7 +11,7 @@ public class AccountConfiguration : AuditableEntityConfiguration<Account>
     {
         base.Configure(builder);
 
-        builder.ToTable("Accounts", schema: "Identity");
+        builder.ToTable("Accounts", schema: "identity");
 
         builder.Property(c => c.UserId)
                 .IsRequired();

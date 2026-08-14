@@ -14,7 +14,7 @@ public class UserConfiguration : AuditableEntityConfiguration<User>
     {
         base.Configure(builder);
 
-        builder.ToTable("Users", schema: "Identity", t =>
+        builder.ToTable("Users", schema: "identity", t =>
         {
             t.HasCheckConstraint(
                 name: "CK_USER_ROLE",
