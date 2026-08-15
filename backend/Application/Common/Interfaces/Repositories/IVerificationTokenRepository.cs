@@ -4,4 +4,5 @@ namespace Application.Common.Interfaces.Repositories;
 
 public interface IVerificationTokenRepository : IRepository<VerificationToken>
 {
+    public Task<VerificationToken?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }
