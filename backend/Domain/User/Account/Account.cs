@@ -26,7 +26,7 @@ public class Account : AuditableEntity
         Password = password;
     }
 
-    public static Result<Account> Create(Guid userId, string? provider, string? providerAccountId, Password? password = null)
+    public static Result<Account> Create(Guid userId, string? provider, string? providerAccountId = null, Password? password = null)
     {
         Error? error = Validate(userId, provider, providerAccountId, password);
 

@@ -78,6 +78,14 @@ public class User : AuditableEntity
         return Result.Updated;
     }
 
+    public void MarkEmailVerified()
+    {
+        if (EmailVerified)
+            return;
+
+        EmailVerified = true;
+    }
+
     public Result<Account> AddAccount(Account account)
     {
         if (account is null)

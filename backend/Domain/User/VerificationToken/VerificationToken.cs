@@ -38,6 +38,20 @@ public class VerificationToken : AuditableEntity
         return new VerificationToken(userId, code!.Trim(), expiresAtUtc, type!.Value);
     }
 
+    public Result<Success> Verify(string code)
+    {
+        if (IsUsed)
+            return VerificationTokenErrors.CodeAlreadyUsed;
+
+        if (DateTimeOffset.UtcNow > ExpiresAtUtc)
+            return VerificationTokenErrors.CodeExpired;
+
+        if (Code != code)
+            return VerificationTokenErrors.InvalidOrExpiredCode;
+
+        return Result.Success;
+    }
+
     public Result<Updated> MarkAsUsed()
     {
         if (IsUsed)
