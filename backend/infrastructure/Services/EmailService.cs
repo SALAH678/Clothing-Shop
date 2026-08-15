@@ -29,7 +29,7 @@ public sealed class EmailService(IConfiguration configuration) : IEmailService
 
     private readonly string _fromName = configuration["Email:FromName"] ?? "Clothing Store";
 
-    public Task SendVerificationCodeAsync(string email, string code, CancellationToken cancellationToken = default)
+    public async Task SendVerificationCodeAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -45,10 +45,10 @@ public sealed class EmailService(IConfiguration configuration) : IEmailService
             </html>
             """;
 
-        return SendAsync(email, "Verify your email", body, cancellationToken);
+        await SendAsync(email, "Verify your email", body, cancellationToken);
     }
 
-    public Task SendPasswordResetCodeAsync(string email, string code, CancellationToken cancellationToken = default)
+    public async Task SendPasswordResetCodeAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -64,7 +64,7 @@ public sealed class EmailService(IConfiguration configuration) : IEmailService
             </html>
             """;
 
-        return SendAsync(email, "Reset your password", body, cancellationToken);
+        await SendAsync(email, "Reset your password", body, cancellationToken);
     }
 
     private async Task SendAsync(string email, string subject, string body, CancellationToken cancellationToken)
@@ -84,8 +84,6 @@ public sealed class EmailService(IConfiguration configuration) : IEmailService
             .SendAsync(cancellationToken);
 
         if (!response.Successful)
-        {
-            throw new InvalidOperationException(string.Join("; ", response.ErrorMessages));
-        }
+            throw new InvalidOperationException(string.Join("; ", response.ErrorMessages)); 
     }
 }
