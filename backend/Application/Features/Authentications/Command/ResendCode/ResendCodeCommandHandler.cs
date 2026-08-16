@@ -8,31 +8,54 @@ using MediatR;
 
 namespace Application.Features.Authentications.Command.ResendVerificationCode;
 
-public class ResendVerificationCodeCommandHandler(IUnitOfWork unitOfWork,
-    ICodeGenerator codeGenerator, IEmailService emailService) : IRequestHandler<ResendVerificationCodeCommand, Result<string>>
+public class ResendCodeCommandHandler(IUnitOfWork unitOfWork,
+    ICodeGenerator codeGenerator, IEmailService emailService) : IRequestHandler<ResendCodeCommand, Result<string>>
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICodeGenerator _codeGenerator = codeGenerator;
     private readonly IEmailService _emailService = emailService;
-
-    public async Task<Result<string>> Handle(ResendVerificationCodeCommand request, CancellationToken cancellationToken)
+    //i think u need to use strategy pattern here
+    public async Task<Result<string>> Handle(ResendCodeCommand request, CancellationToken cancellationToken)
     {
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
 
         if (user is null)
             return ApplicationErrors.InvalidVerificationRequest;
 
-        if(user.EmailVerified)
-            return ApplicationErrors.EmailAlreadyVerified;
+        if(Enum.TryParse<VerificationTokenType>(request.VerificationTokenType, out var verificationTokenType) is false)
+            return ApplicationErrors.InvalidVerificationRequest;
 
-        var verificationToken = await _unitOfWork.VerificationTokens.GetByUserIdAsync(user.Id, cancellationToken);
+        switch (verificationTokenType)
+        {
+            case VerificationTokenType.EmailVerification:
+
+                if (user.EmailVerified)
+                    return ApplicationErrors.EmailAlreadyVerified;
+
+                break;
+
+            case VerificationTokenType.PasswordReset:
+
+                var account = await _unitOfWork.Accounts
+                    .GetByUserIdAsync(user.Id, cancellationToken);
+
+                if (account is null)
+                    return ApplicationErrors.InvalidVerificationRequest;
+
+                break;
+
+            default:
+                return ApplicationErrors.InvalidVerificationRequest;
+        }
+
+        var verificationToken = await _unitOfWork.VerificationTokens.GetByUserIdAsync(user.Id, verificationTokenType, cancellationToken);
 
         if (verificationToken is not null)
             _unitOfWork.VerificationTokens.Delete(verificationToken);
 
         var code = _codeGenerator.GenerateCode();
 
-        var verificationTokenResult = VerificationToken.Create(user.Id, code, DateTimeOffset.UtcNow.AddMinutes(5), VerificationTokenType.EmailVerification);
+        var verificationTokenResult = VerificationToken.Create(user.Id, code, DateTimeOffset.UtcNow.AddMinutes(5), verificationTokenType);
 
         if (!verificationTokenResult.IsSuccess)
             return verificationTokenResult.TopError;

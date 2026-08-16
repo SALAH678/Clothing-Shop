@@ -3,6 +3,7 @@ using MediatR;
 
 namespace Application.Features.Authentications.Command.ResendVerificationCode;
 
-public record ResendVerificationCodeCommand(
-    string Email
+public record ResendCodeCommand(
+    string Email,
+    string VerificationTokenType
 ) : IRequest<Result<string>>;
