@@ -10,6 +10,5 @@ public sealed class AccountRepository(AppDbContext context) : Repository<Account
 {
     public async Task<Account?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
         await _Context.Accounts
-        .AsNoTracking()
         .FirstOrDefaultAsync(a => a.UserId == userId && a.Provider == "local", cancellationToken);
 }

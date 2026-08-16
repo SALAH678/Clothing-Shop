@@ -11,4 +11,9 @@ public sealed class RefreshTokenRepository(AppDbContext context) : Repository<Re
     public async Task<RefreshToken?> GetByValueAsync(string value, CancellationToken cancellationToken = default) =>
         await _Context.RefreshTokens
         .FirstOrDefaultAsync(rt => rt.Value == value, cancellationToken);
+
+    public async Task<List<RefreshToken>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => 
+        await _Context.RefreshTokens
+        .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+        .ToListAsync(cancellationToken);
 }

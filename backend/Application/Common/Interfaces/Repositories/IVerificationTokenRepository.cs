@@ -1,8 +1,9 @@
 using Domain.Users.VerificationTokens;
+using Domain.Users.VerificationTokens.Enum;
 
 namespace Application.Common.Interfaces.Repositories;
 
 public interface IVerificationTokenRepository : IRepository<VerificationToken>
 {
-    public Task<VerificationToken?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+    public Task<VerificationToken?> GetByUserIdAsync(Guid userId, VerificationTokenType tokenType, CancellationToken cancellationToken);
 }
