@@ -50,6 +50,12 @@ public class Account : AuditableEntity
         return Result.Updated;
     }
 
+    public Result<Success> ChangePassword(Password password)
+    {
+        Password = password;
+        return Result.Success;
+    }
+
     private static Error? Validate(Guid userId, string? provider, string? providerAccountId, Password? password)
     {
         if (userId == Guid.Empty)
