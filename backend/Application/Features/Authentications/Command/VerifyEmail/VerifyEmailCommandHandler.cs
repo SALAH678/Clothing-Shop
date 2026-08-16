@@ -5,8 +5,8 @@ using Application.Features.Authentications.Dtos;
 using Application.Features.Users.Dtos;
 using AutoMapper;
 using Domain.Common.Results;
-using Domain.Users.Accounts;
 using Domain.Users.RefreshTokens;
+using Domain.Users.VerificationTokens.Enum;
 using MediatR;
 
 namespace Application.Features.Authentications.Command.VerifyEmail;
@@ -31,7 +31,7 @@ public sealed class VerifyEmailCommandHandler(IUnitOfWork unitOfWork,
             return ApplicationErrors.EmailAlreadyVerified;
 
         var verificationToken = await _unitOfWork.VerificationTokens
-            .GetByUserIdAsync(user.Id, cancellationToken);
+            .GetByUserIdAsync(user.Id, VerificationTokenType.EmailVerification, cancellationToken);
 
         if (verificationToken is null)
             return ApplicationErrors.VerificationTokenNotFound;
