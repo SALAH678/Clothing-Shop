@@ -66,6 +66,12 @@ public class Category : AuditableEntity
         return Result.Updated;
     }
 
+    public Result<Success> RemoveParent()
+    {
+        ParentCategoryId = null;
+        return Result.Success;
+    }
+
     public Result<Category> AddChild(string? categoryName, string? imageUrl)
     {
         Result<Category> childResult = Create(categoryName, imageUrl, Id);

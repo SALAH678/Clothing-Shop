@@ -55,20 +55,21 @@ public sealed class ImageService : IImageService
         return $"{_rootUrl}/{folder}/{uniqueFileName}";
     }
 
-    public async Task<Result<string>> UpdateAsync(string existingImageUrl, Stream newContent, string fileName, string folder, CancellationToken cancellationToken = default)
+    public async Task<Result<string>> UpdateAsync(string? existingImageUrl, Stream newContent, string fileName, string folder, CancellationToken cancellationToken = default)
     {
         var saveResult = await SaveAsync(newContent, fileName, folder, cancellationToken);
 
         if (!saveResult.IsSuccess)
             return saveResult.TopError;
 
+        if(!string.IsNullOrWhiteSpace(existingImageUrl))
+            _ = await DeleteAsync(existingImageUrl, cancellationToken);
         // Best-effort cleanup of the old file — failure here doesn't fail the update.
-        _ = await DeleteAsync(existingImageUrl, cancellationToken);
 
         return saveResult.Value;
     }
 
-    public Task<Result<Deleted>> DeleteAsync(string imageUrl, CancellationToken cancellationToken = default)
+    public Task<Result<Deleted>> DeleteAsync(string? imageUrl, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
             return Task.FromResult<Result<Deleted>>(ImageErrors.NotFound);

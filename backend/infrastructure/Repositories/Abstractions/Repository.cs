@@ -19,6 +19,11 @@ public abstract class Repository<TEntity>(AppDbContext Context) : IRepository<TE
         await _Context.Set<TEntity>()
         .FindAsync([id], ct);
 
+    public async Task<IReadOnlyList<TEntity>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default) =>
+        await _Context.Set<TEntity>()
+        .Where(c => ids.Contains(c.Id))
+        .ToListAsync(cancellationToken);
+
     public void Create(TEntity entity) => _Context.Set<TEntity>().Add(entity);
 
     public void Update(TEntity entity) => _Context.Set<TEntity>().Update(entity);
