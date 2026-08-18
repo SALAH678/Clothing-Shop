@@ -9,7 +9,7 @@ namespace Domain.Products;
 public class Product : AuditableEntity
 {
     public string Name { get; private set; } = null!;
-    public string Description { get; private set; } = null!;
+    public string? Description { get; private set; }
     public decimal BasePrice { get; private set; }
     public decimal? Discount { get; private set; }
     public Guid CategoryId { get; private set; }
@@ -26,7 +26,7 @@ public class Product : AuditableEntity
     {
     }
 
-    protected Product(string name, string description, decimal basePrice, decimal? discount, Guid categoryId)
+    protected Product(string name, string? description, decimal basePrice, decimal? discount, Guid categoryId)
         : base(Guid.Empty)
     {
         Name = name;
@@ -153,8 +153,8 @@ public class Product : AuditableEntity
         if (string.IsNullOrWhiteSpace(name))
             return ProductErrors.NameRequired;
 
-        if (string.IsNullOrWhiteSpace(description))
-            return ProductErrors.DescriptionRequired;
+        //if (string.IsNullOrWhiteSpace(description))
+        //    return ProductErrors.DescriptionRequired;
 
         if (basePrice <= 0)
             return ProductErrors.InvalidBasePrice;

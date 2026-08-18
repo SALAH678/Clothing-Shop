@@ -17,8 +17,9 @@ public class ProductConfiguration : AuditableEntityConfiguration<Product>
             .HasMaxLength(200);
 
         builder.Property(product => product.Description)
-            .IsRequired()
-            .HasMaxLength(2000);
+            .IsRequired(false)
+            .HasMaxLength(2000)
+            .HasDefaultValue(null);
 
         builder.Property(product => product.BasePrice)
             .IsRequired()
