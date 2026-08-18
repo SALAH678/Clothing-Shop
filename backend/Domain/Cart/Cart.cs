@@ -9,9 +9,9 @@ public class Cart : AuditableEntity
 {
     public Guid UserId { get; private set; }
 
-    private readonly List<CartItem>? _items = [];
+    private readonly List<CartItem> _items = [];
 
-    public IReadOnlyCollection<CartItem>? Items => _items?.AsReadOnly();
+    public IReadOnlyCollection<CartItem> Items => _items.AsReadOnly();
 
     public User User { get; private set; } = null!;
 
@@ -52,8 +52,6 @@ public class Cart : AuditableEntity
         if (cartItemResult.IsError)
             return cartItemResult.Errors;
 
-        _items?.Add(cartItemResult.Value);
-
         return cartItemResult.Value;
     }
 
@@ -67,9 +65,9 @@ public class Cart : AuditableEntity
         return item.UpdateQuantity(quantity);
     }
 
-    public Result<Deleted> RemoveItem(Guid variantId)
+    public Result<Deleted> RemoveItem(Guid cartItemId)
     {
-        CartItem? item = _items?.FirstOrDefault(item => item.VariantId == variantId);
+        CartItem? item = _items?.FirstOrDefault(item => item.Id == cartItemId);
 
         if (item is null)
             return CartErrors.ItemNotFound;
