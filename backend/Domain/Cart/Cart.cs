@@ -52,6 +52,8 @@ public class Cart : AuditableEntity
         if (cartItemResult.IsError)
             return cartItemResult.Errors;
 
+        _items?.Add(cartItemResult.Value);
+
         return cartItemResult.Value;
     }
 
