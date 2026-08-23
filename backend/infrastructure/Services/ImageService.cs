@@ -1,5 +1,6 @@
-﻿using Application.Common.Interfaces.Services;
+using Application.Common.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace infrastructure.Services;
 
@@ -10,13 +11,15 @@ public sealed class ImageService : IImageService
 
     private readonly string _rootPath;
     private readonly string _rootUrl;
+    private readonly ILogger<ImageService> _logger;
 
-    public ImageService(IConfiguration configuration)
+    public ImageService(IConfiguration configuration, ILogger<ImageService> logger)
     {
         _rootPath = configuration["ImageStorage:BasePath"]
             ?? throw new InvalidOperationException("ImageStorage:BasePath is not configured.");
         _rootUrl = configuration["ImageStorage:BaseUrl"]
             ?? throw new InvalidOperationException("ImageStorage:BaseUrl is not configured.");
+        _logger = logger;
     }
 
     public async Task<string> SaveAsync(Stream content, string fileName, string folder, CancellationToken cancellationToken = default)
@@ -40,6 +43,8 @@ public sealed class ImageService : IImageService
         var uniqueFileName = $"{Guid.NewGuid()}{extension}";
         var fullPath = Path.Combine(folderPath, uniqueFileName);
 
+        _logger.LogInformation("Attempting to save image to {Path}", fullPath);
+
         try
         {
             await using var fileStream = new FileStream(fullPath, FileMode.Create);
@@ -47,18 +52,23 @@ public sealed class ImageService : IImageService
         }
         catch (OperationCanceledException)
         {
+            _logger.LogWarning("Saving image to {Path} was canceled.", fullPath);
             throw;
         }
         catch (Exception exception)
         {
+            _logger.LogError(exception, "Failed to save the image to {Path}", fullPath);
             throw new IOException("Failed to save the image.", exception);
         }
 
-        return $"{_rootUrl}/{folder}/{uniqueFileName}";
+        var imageUrl = $"{_rootUrl}/{folder}/{uniqueFileName}";
+        _logger.LogInformation("Successfully saved image to {Path}. Image URL: {ImageUrl}", fullPath, imageUrl);
+        return imageUrl;
     }
 
     public async Task<string> UpdateAsync(string? existingImageUrl, Stream newContent, string fileName, string folder, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Updating image. Existing: {ExistingUrl}", existingImageUrl);
         var imageUrl = await SaveAsync(newContent, fileName, folder, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(existingImageUrl))
@@ -69,7 +79,11 @@ public sealed class ImageService : IImageService
             }
             catch (FileNotFoundException)
             {
-                // The old file is already absent; the replacement was saved successfully.
+                _logger.LogWarning("Existing image to delete was not found: {ExistingUrl}", existingImageUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete existing image {ExistingUrl} during update.", existingImageUrl);
             }
         }
 
@@ -97,12 +111,16 @@ public sealed class ImageService : IImageService
         if (!File.Exists(resolvedPath))
             throw new FileNotFoundException("The image could not be found.", resolvedPath);
 
+        _logger.LogInformation("Deleting image file at path {Path} for URL {ImageUrl}", resolvedPath, imageUrl);
+
         try
         {
             File.Delete(resolvedPath);
+            _logger.LogInformation("Successfully deleted image file at path {Path}", resolvedPath);
         }
         catch (Exception exception)
         {
+            _logger.LogError(exception, "Failed to delete the image file at path {Path}", resolvedPath);
             throw new IOException("Failed to delete the image.", exception);
         }
 

@@ -1,13 +1,14 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mail;
 using Application.Common.Interfaces.Services;
 using FluentEmail.Core;
 using FluentEmail.Smtp;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace infrastructure.Services;
 
-public sealed class EmailService(IConfiguration configuration) : IEmailService
+public sealed class EmailService(IConfiguration configuration, ILogger<EmailService> logger) : IEmailService
 {
     private readonly string _smtpHost = configuration["Email:SmtpHost"]
         ?? throw new InvalidOperationException("Email:SmtpHost is not configured.");
@@ -76,14 +77,28 @@ public sealed class EmailService(IConfiguration configuration) : IEmailService
             DeliveryMethod = SmtpDeliveryMethod.Network
         });
 
-        var response = await Email
-            .From(_fromEmail, _fromName)
-            .To(email)
-            .Subject(subject)
-            .Body(body, true)
-            .SendAsync(cancellationToken);
+        try
+        {
+            var response = await Email
+                .From(_fromEmail, _fromName)
+                .To(email)
+                .Subject(subject)
+                .Body(body, true)
+                .SendAsync(cancellationToken);
 
-        if (!response.Successful)
-            throw new InvalidOperationException(string.Join("; ", response.ErrorMessages)); 
+            if (!response.Successful)
+            {
+                var errors = string.Join("; ", response.ErrorMessages);
+                logger.LogError("Failed to send email to {Email} with subject '{Subject}'. Errors: {Errors}", email, subject, errors);
+                throw new InvalidOperationException(errors);
+            }
+
+            logger.LogInformation("Successfully sent email to {Email} with subject '{Subject}'.", email, subject);
+        }
+        catch (Exception exception) when (exception is not InvalidOperationException)
+        {
+            logger.LogError(exception, "Exception occurred while sending email to {Email} with subject '{Subject}'", email, subject);
+            throw;
+        }
     }
 }
