@@ -12,8 +12,28 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
 
     public override void Configure()
     {
-        Post("api/auth/reset-password");
+        Post("/reset-password");
+        Group<AuthGroup>();
         AllowAnonymous();
+
+        Summary(s =>
+        {
+            s.Summary = "Reset the user password";
+            s.Description = "Verifies the password reset code and updates the account password to the new password supplied by the user.";
+            s.ExampleRequest = new ResetPasswordCommand("john.doe@example.com", "123456", "N3wP@ssw0rd!");
+            s.Responses[200] = "Password reset successfully.";
+            s.Responses[400] = "The password reset payload or code is invalid.";
+            s.Responses[401] = "The password reset request is invalid or expired.";
+            s.Responses[404] = "A password reset token was not found.";
+            s.Responses[500] = "Password reset could not be completed.";
+        });
+
+        Description(x => x
+            .Produces<string>(200)
+            .ProducesProblemDetails(400)
+            .ProducesProblemDetails(401)
+            .ProducesProblemDetails(404)
+            .ProducesProblemDetails(500));
     }
 
     public override async Task<IResult> HandleAsync(ResetPasswordCommand req, CancellationToken ct)

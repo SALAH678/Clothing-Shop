@@ -12,8 +12,28 @@ public class LogOut(IMediator mediator) : Endpoint<LogOutCommand, Result<Success
 
     public override void Configure()
     {
-        Post("api/auth/logout");
+        Post("/logout");
+        Group<AuthGroup>();
         AllowAnonymous();
+
+        Summary(s =>
+        {
+            s.Summary = "Sign out the current user";
+            s.Description = "Invalidates the supplied refresh token and logs the user out of the current session.";
+            s.ExampleRequest = new LogOutCommand("john.doe@example.com", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...");
+            s.Responses[200] = "User logged out successfully.";
+            s.Responses[400] = "The logout payload is invalid.";
+            s.Responses[401] = "The logout request is invalid, revoked, or expired.";
+            s.Responses[404] = "The refresh token was not found.";
+            s.Responses[500] = "Logout could not be completed.";
+        });
+
+        Description(x => x
+            .Produces<Success>(200)
+            .ProducesProblemDetails(400)
+            .ProducesProblemDetails(401)
+            .ProducesProblemDetails(404)
+            .ProducesProblemDetails(500));
     }
     public override async Task<IResult> HandleAsync(LogOutCommand req, CancellationToken ct)
     {

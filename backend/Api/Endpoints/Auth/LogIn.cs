@@ -14,8 +14,26 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, Result<AuthRespo
 
     public override void Configure()
     {
-        Post("api/auth/login");
+        Post("/login");
+        Group<AuthGroup>();
         AllowAnonymous();
+
+        Summary(s =>
+        {
+            s.Summary = "Sign in to the application";
+            s.Description = "Authenticates a user with email and password and returns the user profile plus a fresh access and refresh token pair.";
+            s.ExampleRequest = new LoginCommand("john.doe@example.com", "P@ssw0rd123");
+            s.Responses[200] = "User authenticated successfully.";
+            s.Responses[400] = "The login payload is invalid.";
+            s.Responses[401] = "The supplied credentials are invalid or the email is not verified.";
+            s.Responses[500] = "Authentication failed while creating the session.";
+        });
+
+        Description(x => x
+            .Produces<AuthResponse>(200)
+            .ProducesProblemDetails(400)
+            .ProducesProblemDetails(401)
+            .ProducesProblemDetails(500));
     }
     public override async Task<IResult> HandleAsync(LoginCommand req, CancellationToken ct)
     {
