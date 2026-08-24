@@ -8,11 +8,13 @@ using TickerQ.Utilities.Interfaces.Managers;
 
 namespace infrastructure.BackgroundJobs;
 
-public class ImageCleanupJob(IImageService imageService, ITimeTickerManager<TimeTickerEntity> tickerManager, ILogger<ImageCleanupJob> logger) : IImageCleanupJob
+public class ImageCleanupJob(IImageService imageService, ITimeTickerManager<TimeTickerEntity> tickerManager,
+    ILogger<ImageCleanupJob> logger, IBackgroundJobTracker backgroundJobTracker) : IImageCleanupJob
 {
     private readonly IImageService _imageService = imageService;
     private readonly ITimeTickerManager<TimeTickerEntity> _tickerManager = tickerManager;
     private readonly ILogger<ImageCleanupJob> _logger = logger;
+    private readonly IBackgroundJobTracker _backgroundJobTracker = backgroundJobTracker;
 
     [TickerFunction(functionName: "DeleteImages")]
     public async Task DeleteImagesAsync(TickerFunctionContext<List<string>> tickerContext, CancellationToken cancellationToken)
@@ -40,6 +42,9 @@ public class ImageCleanupJob(IImageService imageService, ITimeTickerManager<Time
                 _logger.LogError(ex, "Failed to delete image at URL: {ImageUrl}", imageUrl);
             }
         }
+
+        _backgroundJobTracker.RecordHeartbeat(nameof(ImageCleanupJob));
+
     }
 
     public async Task ScheduleAsync(IReadOnlyCollection<string> imageUrls, CancellationToken cancellationToken)

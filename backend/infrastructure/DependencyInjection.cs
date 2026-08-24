@@ -3,6 +3,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.Common.Interfaces.Services;
 using infrastructure.Data;
 using infrastructure.Data.Interceptors;
+using infrastructure.BackgroundJobs;
 using infrastructure.Identity;
 using infrastructure.Repositories;
 using infrastructure.Services;
@@ -13,6 +14,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Application.Common.Interfaces.BackgroundJobs;
+using infrastructure.HealthChecks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -48,12 +51,16 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IVariantRepository, VariantRepository>();
         services.AddScoped<IVerificationTokenRepository, VerificationTokenRepository>();
+        services.AddScoped<IImageCleanupJob, ImageCleanupJob>();
+        services.AddScoped<IEmailJob, EmailJob>();
 
         //UnitOfWork
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         // Image Service
         services.AddScoped<IImageService, ImageService>();
+        
         services.AddScoped<IEmailService, EmailService>();
+        //services.AddScoped<IOAuthService, OAuthService>();
 
         services.AddScoped<ITokenProvider, TokenProvider>();
 
@@ -62,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenHasherService, TokenHasherService>();
 
         services.AddScoped<IPasswordService, PasswordService>();
+
+        services.AddSingleton<IBackgroundJobTracker, BackgroundJobTracker>();
 
         //configure authentication
         services.AddAuthentication(options =>
@@ -85,8 +94,23 @@ public static class DependencyInjection
             };
         });
 
-        services.AddAuthorization();
+        //configure health checks
+        services.AddHealthChecks()
+            .AddDbContextCheck<AppDbContext>(
+                tags: ["ready"]) // check DBContext and ef core config plus the connection with DB
+            .AddTypeActivatedCheck<BackgroundJobHealthCheck>(
+                name: "email_job_check",
+                failureStatus: null,
+                tags: ["ready", "jobs"],
+                args: [nameof(EmailJob)]) // check email job
+            .AddTypeActivatedCheck<BackgroundJobHealthCheck>(
+                name: "image_cleanup_job_check",
+                failureStatus: null,
+                tags: ["ready", "jobs"],
+                args: [nameof(ImageCleanupJob)]); // check image cleanup job
 
+        services.AddAuthorization();
+            
         return services;
     }
 }

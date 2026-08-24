@@ -10,11 +10,13 @@ namespace infrastructure.BackgroundJobs;
 
 public record SendCodePayload(string Email, string Code);
 
-public class EmailJob(IEmailService emailService, ITimeTickerManager<TimeTickerEntity> tickerManager, ILogger<EmailJob> logger) : IEmailJob
+public class EmailJob(IEmailService emailService, ITimeTickerManager<TimeTickerEntity> tickerManager,
+    ILogger<EmailJob> logger, IBackgroundJobTracker backgroundJobTracker) : IEmailJob
 {
     private readonly IEmailService _emailService = emailService;
     private readonly ITimeTickerManager<TimeTickerEntity> _tickerManager = tickerManager;
     private readonly ILogger<EmailJob> _logger = logger;
+    private readonly IBackgroundJobTracker _backgroundJobTracker = backgroundJobTracker;
 
     [TickerFunction(functionName: "SendVerificationCode")]
     public async Task SendVerificationCodeAsync(TickerFunctionContext<SendCodePayload> tickerContext, CancellationToken cancellationToken = default)
@@ -26,6 +28,8 @@ public class EmailJob(IEmailService emailService, ITimeTickerManager<TimeTickerE
         {
             await _emailService.SendVerificationCodeAsync(payload.Email, payload.Code, cancellationToken);
             _logger.LogInformation("Verification code successfully sent to {Email}", payload.Email);
+
+            _backgroundJobTracker.RecordHeartbeat(nameof(EmailJob));
         }
         catch (Exception ex)
         {
@@ -43,6 +47,8 @@ public class EmailJob(IEmailService emailService, ITimeTickerManager<TimeTickerE
         {
             await _emailService.SendPasswordResetCodeAsync(payload.Email, payload.Code, cancellationToken);
             _logger.LogInformation("Password reset code successfully sent to {Email}", payload.Email);
+
+            _backgroundJobTracker.RecordHeartbeat(nameof(EmailJob));
         }
         catch (Exception ex)
         {
