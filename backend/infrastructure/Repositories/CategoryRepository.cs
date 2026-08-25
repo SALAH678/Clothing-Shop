@@ -1,6 +1,5 @@
 using Application.Common.Interfaces.Repositories;
 using Domain.Categories;
-using Domain.Common;
 using infrastructure.Data;
 using infrastructure.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;

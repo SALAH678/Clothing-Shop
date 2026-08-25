@@ -13,6 +13,7 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
     public async Task<IReadOnlyList<Product>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default) =>
         await _Context.Products
             .Include(product => product.Variants)
+            .Include(product => product.Images)
             .Where(product => product.CategoryId == categoryId)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
@@ -20,6 +21,7 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
     public override async ValueTask<Product?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _Context.Products
             .Include(product => product.Variants)
+            .Include(product => product.Images)
             .FirstOrDefaultAsync(product => product.Id == id, ct);
 
     public async Task<PaginatedList<Product>> GetProductsAsync(Guid categoryId, ProductFilter productFilter,
@@ -68,7 +70,9 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
             query = query.OrderByDescending(product => product.CreatedAtUtc);
 
         var products = await query
-            .Skip(pageNumber - 1)
+            .Include(product => product.Variants)
+            .Include(product => product.Images)
+            .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
