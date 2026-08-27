@@ -1,12 +1,11 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.ForgotPassword;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand, Result<string>>
+public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -20,7 +19,7 @@ public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand
         {
             s.Summary = "Request a password reset";
             s.Description = "Sends a password reset email to the user so they can create a new password.";
-            s.ExampleRequest = new ForgotPasswordCommand("john.doe@example.com");
+            s.ExampleRequest = new ForgotPasswordCommand("john.doe@gmail.com");
             s.Responses[200] = "Password reset instructions sent successfully.";
             s.Responses[400] = "The email address is invalid.";
             s.Responses[500] = "Password reset request could not be processed.";
@@ -32,7 +31,7 @@ public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(ForgotPasswordCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(ForgotPasswordCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
         

@@ -1,12 +1,11 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.ResendVerificationCode;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, Result<string>>
+public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -20,7 +19,7 @@ public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, Result
         {
             s.Summary = "Resend the verification code";
             s.Description = "Sends a fresh verification email or message for the selected verification token type.";
-            s.ExampleRequest = new ResendCodeCommand("john.doe@example.com", "email");
+            s.ExampleRequest = new ResendCodeCommand("john.doe@gmail.com", "EmailVerification || PhoneVerification");
             s.Responses[200] = "Verification code sent successfully.";
             s.Responses[400] = "The verification request is invalid.";
             s.Responses[401] = "The verification request is unauthorized.";
@@ -36,7 +35,7 @@ public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, Result
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(ResendCodeCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(ResendCodeCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

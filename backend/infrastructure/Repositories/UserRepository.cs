@@ -1,5 +1,4 @@
 using Application.Common.Interfaces.Repositories;
-using Domain.Common;
 using Domain.Common.ValueObjects.Email;
 using Domain.Users;
 using infrastructure.Data;
@@ -12,10 +11,14 @@ public sealed class UserRepository(AppDbContext context) : Repository<User>(cont
 {
     public async Task<bool> ExistsAsync(Email email, CancellationToken cancellationToken = default) =>
             await _Context.Users
-            .AnyAsync(c => c.Email.Value == email.Value, cancellationToken);
+            .AnyAsync(c => c.Email == email, cancellationToken);
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+    public async Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default) =>
         await _Context.Users
         .AsNoTracking()
-        .FirstOrDefaultAsync(c => c.Email.Value == email, cancellationToken);   
+        .FirstOrDefaultAsync(c => c.Email == email, cancellationToken);
+
+    public async Task<User?> GetByEmailWithTrackingAsync(Email email, CancellationToken cancellationToken = default) =>
+        await _Context.Users
+        .FirstOrDefaultAsync(c => c.Email == email, cancellationToken);
 }

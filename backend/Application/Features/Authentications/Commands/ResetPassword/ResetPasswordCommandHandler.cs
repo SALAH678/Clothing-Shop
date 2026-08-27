@@ -1,21 +1,29 @@
-﻿using Application.Common.Errors;
+using Application.Common.Errors;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
+using Domain.Common.ValueObjects.Email;
 using Domain.Common.ValueObjects.Password;
 using Domain.Users.VerificationTokens.Enum;
 using MediatR;
 
+using Microsoft.Extensions.Logging;
 namespace Application.Features.Authentications.Command.ResetPassword;
 
-public sealed class ResetPasswordCommandHandler(IUnitOfWork unitOfWork, IPasswordService passwordService) : IRequestHandler<ResetPasswordCommand, Result<string>>
+public sealed class ResetPasswordCommandHandler(IUnitOfWork unitOfWork, IPasswordService passwordService, ILogger<ResetPasswordCommandHandler> logger) : IRequestHandler<ResetPasswordCommand, Result<string>>
 {
+    private readonly ILogger<ResetPasswordCommandHandler> _logger = logger;
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IPasswordService _passwordService = passwordService;
 
     public async Task<Result<string>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+        _logger.LogInformation("Password reset attempt for Email: {Email}", request.Email);
+
+        var emailResult = Email.Create(request.Email);
+
+        var user = await _unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
 
         if (user is null)
             return ApplicationErrors.InvalidPasswordResetRequest;
@@ -65,10 +73,13 @@ public sealed class ResetPasswordCommandHandler(IUnitOfWork unitOfWork, IPasswor
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "ResetPassword failed: unable to save password change for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
             return ApplicationErrors.PasswordResetFailed;
         }
+
+        _logger.LogInformation("Password reset successful for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
 
         return "Your password has been reset successfully.";
     }

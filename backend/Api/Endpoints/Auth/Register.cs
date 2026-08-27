@@ -1,12 +1,12 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.Register;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class Register(IMediator mediator) : Endpoint<RegisterCommand,Result<string>>
+public class Register(IMediator mediator) : Endpoint<RegisterCommand, IResult> // here RegisterCommand is the request
+    // and http response i'll handle it myself and not fastendpoints think two times before reading this comment
 {
     private readonly IMediator _mediator = mediator;
 
@@ -15,6 +15,7 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand,Result<stri
         Post("/register");
         Group<AuthGroup>();
         AllowAnonymous();
+        //DontAutoSendResponse();
 
         Summary(s =>
         {
@@ -23,8 +24,8 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand,Result<stri
             s.ExampleRequest = new RegisterCommand(
                 "John",
                 "Doe",
-                "+1234567890",
-                "john.doe@example.com",
+                "1234567890",
+                "john.doe@gmail.com",
                 "P@ssw0rd123");
             s.Responses[200] = "Registration successful.";
             s.Responses[400] = "Validation failed for the registration payload.";
@@ -39,7 +40,7 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand,Result<stri
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(RegisterCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(RegisterCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 
@@ -47,5 +48,9 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand,Result<stri
             onSuccess: value => Results.Ok(value),
             onError: errors => errors.ToProblem()
         );
+
+        //await httpResult.ExecuteAsync(HttpContext);
+
+        //return httpResult;
     }
 }

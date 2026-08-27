@@ -1,5 +1,6 @@
-﻿using Application.Common.Errors;
+using Application.Common.Errors;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.BackgroundJobs;
 using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
@@ -12,19 +13,23 @@ using Domain.Users.VerificationTokens;
 using Domain.Users.VerificationTokens.Enum;
 using MediatR;
 
+using Microsoft.Extensions.Logging;
 namespace Application.Features.Authentications.Command.Register;
 
-public class RegisterCommandHandler(
-        IUnitOfWork unitOfWork, IPasswordService passwordService,
-        ICodeGenerator codeGenerator, IEmailService emailService) : IRequestHandler<RegisterCommand, Result<string>>
+public class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordService passwordService,
+    ICodeGenerator codeGenerator, IEmailJob emailJob, ILogger<RegisterCommandHandler> logger) : IRequestHandler<RegisterCommand, Result<string>>
 {
+    private readonly ILogger<RegisterCommandHandler> _logger = logger;
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IPasswordService _passwordService = passwordService;
     private readonly ICodeGenerator _codeGenerator = codeGenerator;
-    private readonly IEmailService _emailService = emailService;
+    private readonly IEmailJob _emailJob = emailJob;
 
     public async Task<Result<string>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Registration attempt for Email: {Email}", request.Email);
+
         var email = Email.Create(request.Email);
 
         if (!email.IsSuccess)
@@ -43,7 +48,10 @@ public class RegisterCommandHandler(
         var emailExists = await _unitOfWork.Users.ExistsAsync(email.Value, cancellationToken);
 
         if (emailExists)
+        {
+            _logger.LogWarning("Registration failed: email already exists for Email: {Email}", request.Email);
             return ApplicationErrors.EmailAlreadyExists;
+        }
 
         var user = User.Create(request.FirstName, request.LastName, email.Value, phoneNumber.Value, Role.Customer);
 
@@ -70,20 +78,23 @@ public class RegisterCommandHandler(
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Registration failed: unable to save user data for Email: {Email}, UserId: {UserId}", request.Email, user.Value.Id);
             return ApplicationErrors.RegistrationFailed;
         }
 
         try
         {
-            await _emailService.SendVerificationCodeAsync(request.Email, code, cancellationToken);
+
+            await _emailJob.ScheduleSendVerificationCodeAsync(request.Email, code, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
-            //log this 
-            //return "Account created, but verification email could not be sent. Please request another verification email.";
+            _logger.LogError(ex, "Registration: failed to schedule verification email for Email: {Email}, UserId: {UserId}", request.Email, user.Value.Id);
         }
+
+        _logger.LogInformation("Registration successful for Email: {Email}, UserId: {UserId}", request.Email, user.Value.Id);
 
         return "Registration successful. Please check your email to verify your account.";
     }

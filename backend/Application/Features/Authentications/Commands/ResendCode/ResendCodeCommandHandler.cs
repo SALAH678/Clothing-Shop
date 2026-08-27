@@ -1,23 +1,33 @@
-﻿using Application.Common.Errors;
+using Application.Common.Errors;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.BackgroundJobs;
 using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
+using Domain.Common.ValueObjects.Email;
 using Domain.Users.VerificationTokens;
 using Domain.Users.VerificationTokens.Enum;
 using MediatR;
 
+using Microsoft.Extensions.Logging;
 namespace Application.Features.Authentications.Command.ResendVerificationCode;
 
-public class ResendCodeCommandHandler(IUnitOfWork unitOfWork,
-    ICodeGenerator codeGenerator, IEmailService emailService) : IRequestHandler<ResendCodeCommand, Result<string>>
+public class ResendCodeCommandHandler(IUnitOfWork unitOfWork, ICodeGenerator codeGenerator,
+    IEmailJob emailJob, ILogger<ResendCodeCommandHandler> logger) : IRequestHandler<ResendCodeCommand, Result<string>>
 {
+    private readonly ILogger<ResendCodeCommandHandler> _logger = logger;
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICodeGenerator _codeGenerator = codeGenerator;
-    private readonly IEmailService _emailService = emailService;
+    private readonly IEmailJob _emailJob = emailJob;
+
     //i think u need to use strategy pattern here
     public async Task<Result<string>> Handle(ResendCodeCommand request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
+        _logger.LogInformation("Resend code requested for Email: {Email}, Type: {Type}", request.Email, request.VerificationTokenType);
+
+        var emailResult = Email.Create(request.Email);
+
+        var user = await _unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
 
         if (user is null)
             return ApplicationErrors.InvalidVerificationRequest;
@@ -66,20 +76,24 @@ public class ResendCodeCommandHandler(IUnitOfWork unitOfWork,
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "ResendCode failed: unable to save verification token for Email: {Email}", request.Email);
             return ApplicationErrors.ResendVerificationCodeFailed;
         }
 
         try
         {
-            await _emailService.SendVerificationCodeAsync(user.Email.Value, code, cancellationToken);
+            if (verificationTokenType == VerificationTokenType.EmailVerification)
+                await _emailJob.ScheduleSendVerificationCodeAsync(user.Email.Value, code, cancellationToken);
+            else
+                await _emailJob.ScheduleSendPasswordResetCodeAsync(user.Email.Value, code, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
-            //log this 
+            _logger.LogError(ex, "ResendCode: failed to schedule email job for Email: {Email}, UserId: {UserId}, Type: {Type}", request.Email, user.Id, verificationTokenType);
         }
 
-        return "A new verification code has been sent.";
+        return "A new code has been sent.";
     }
 }

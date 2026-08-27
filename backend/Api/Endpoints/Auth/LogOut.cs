@@ -6,7 +6,7 @@ using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class LogOut(IMediator mediator) : Endpoint<LogOutCommand, Result<Success>>
+public class LogOut(IMediator mediator) : Endpoint<LogOutCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -20,7 +20,7 @@ public class LogOut(IMediator mediator) : Endpoint<LogOutCommand, Result<Success
         {
             s.Summary = "Sign out the current user";
             s.Description = "Invalidates the supplied refresh token and logs the user out of the current session.";
-            s.ExampleRequest = new LogOutCommand("john.doe@example.com", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...");
+            s.ExampleRequest = new LogOutCommand("john.doe@gmail.com", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...");
             s.Responses[200] = "User logged out successfully.";
             s.Responses[400] = "The logout payload is invalid.";
             s.Responses[401] = "The logout request is invalid, revoked, or expired.";
@@ -35,7 +35,7 @@ public class LogOut(IMediator mediator) : Endpoint<LogOutCommand, Result<Success
             .ProducesProblemDetails(404)
             .ProducesProblemDetails(500));
     }
-    public override async Task<IResult> HandleAsync(LogOutCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(LogOutCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

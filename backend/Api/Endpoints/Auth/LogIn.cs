@@ -1,14 +1,13 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.Login;
 using Application.Features.Authentications.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
 
-public class LogIn(IMediator mediator) : Endpoint<LoginCommand, Result<AuthResponse>>
+public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -22,7 +21,7 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, Result<AuthRespo
         {
             s.Summary = "Sign in to the application";
             s.Description = "Authenticates a user with email and password and returns the user profile plus a fresh access and refresh token pair.";
-            s.ExampleRequest = new LoginCommand("john.doe@example.com", "P@ssw0rd123");
+            s.ExampleRequest = new LoginCommand("john.doe@gmail.com", "P@ssw0rd123");
             s.Responses[200] = "User authenticated successfully.";
             s.Responses[400] = "The login payload is invalid.";
             s.Responses[401] = "The supplied credentials are invalid or the email is not verified.";
@@ -35,7 +34,7 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, Result<AuthRespo
             .ProducesProblemDetails(401)
             .ProducesProblemDetails(500));
     }
-    public override async Task<IResult> HandleAsync(LoginCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(LoginCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

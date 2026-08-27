@@ -1,12 +1,11 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.ResetPassword;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, Result<string>>
+public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -20,7 +19,7 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
         {
             s.Summary = "Reset the user password";
             s.Description = "Verifies the password reset code and updates the account password to the new password supplied by the user.";
-            s.ExampleRequest = new ResetPasswordCommand("john.doe@example.com", "123456", "N3wP@ssw0rd!");
+            s.ExampleRequest = new ResetPasswordCommand("john.doe@gmail.com", "123456", "N3wP@ssw0rd!");
             s.Responses[200] = "Password reset successfully.";
             s.Responses[400] = "The password reset payload or code is invalid.";
             s.Responses[401] = "The password reset request is invalid or expired.";
@@ -36,7 +35,7 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(ResetPasswordCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(ResetPasswordCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
         

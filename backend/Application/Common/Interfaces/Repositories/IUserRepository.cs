@@ -7,5 +7,6 @@ namespace Application.Common.Interfaces.Repositories;
 public interface IUserRepository : IRepository<User>
 {
     Task<bool> ExistsAsync(Email email, CancellationToken cancellationToken = default);
-    Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default);
+    Task<User?> GetByEmailWithTrackingAsync(Email email, CancellationToken cancellationToken = default);
 }

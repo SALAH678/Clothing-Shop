@@ -6,7 +6,7 @@ using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, Result<Success>>
+public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -20,7 +20,7 @@ public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, Resu
         {
             s.Summary = "Verify the user email";
             s.Description = "Matches the email verification code sent to the user and completes the account verification flow.";
-            s.ExampleRequest = new VerifyEmailCommand("john.doe@example.com", "123456");
+            s.ExampleRequest = new VerifyEmailCommand("john.doe@gmail.com", "123456");
             s.Responses[200] = "Email verified successfully.";
             s.Responses[400] = "The verification code is invalid.";
             s.Responses[401] = "The user is not valid for this verification request.";
@@ -38,7 +38,7 @@ public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, Resu
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(VerifyEmailCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(VerifyEmailCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 
