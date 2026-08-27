@@ -3,32 +3,34 @@ using System.Net.Mail;
 using Application.Common.Interfaces.Services;
 using FluentEmail.Core;
 using FluentEmail.Smtp;
+using infrastructure.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace infrastructure.Services;
 
-public sealed class EmailService(IConfiguration configuration, ILogger<EmailService> logger) : IEmailService
+public sealed class EmailService(ILogger<EmailService> logger, IOptions<EmailOptions> options) : IEmailService
 {
-    private readonly string _smtpHost = configuration["Email:SmtpHost"]
+    private readonly string _smtpHost = options.Value.SmtpHost
         ?? throw new InvalidOperationException("Email:SmtpHost is not configured.");
 
-    private readonly int _smtpPort = int.TryParse(configuration["Email:SmtpPort"], out var port)
-        ? port
+    private readonly int _smtpPort = options.Value.SmtpPort > 0
+        ? options.Value.SmtpPort
         : throw new InvalidOperationException("Email:SmtpPort is not configured.");
 
-    private readonly bool _enableSsl = bool.TryParse(configuration["Email:EnableSsl"], out var enableSsl) && enableSsl;
+    private readonly bool _enableSsl = options.Value.EnableSsl;
 
-    private readonly string _username = configuration["Email:Username"]
+    private readonly string _username = options.Value.Username
         ?? throw new InvalidOperationException("Email:Username is not configured.");
 
-    private readonly string _password = configuration["Email:Password"]
+    private readonly string _password = options.Value.Password
         ?? throw new InvalidOperationException("Email:Password is not configured.");
 
-    private readonly string _fromEmail = configuration["Email:FromEmail"]
+    private readonly string _fromEmail = options.Value.FromEmail
         ?? throw new InvalidOperationException("Email:FromEmail is not configured.");
 
-    private readonly string _fromName = configuration["Email:FromName"] ?? "Clothing Store";
+    private readonly string _fromName = options.Value.FromName ?? "Clothing Store";
 
     public async Task SendVerificationCodeAsync(string email, string code, CancellationToken cancellationToken = default)
     {
@@ -73,6 +75,7 @@ public sealed class EmailService(IConfiguration configuration, ILogger<EmailServ
         Email.DefaultSender = new SmtpSender(() => new SmtpClient(_smtpHost, _smtpPort)
         {
             EnableSsl = _enableSsl,
+            UseDefaultCredentials = false,
             Credentials = new NetworkCredential(_username, _password),
             DeliveryMethod = SmtpDeliveryMethod.Network
         });

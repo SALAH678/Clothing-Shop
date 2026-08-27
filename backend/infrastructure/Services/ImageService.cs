@@ -1,6 +1,8 @@
 using Application.Common.Interfaces.Services;
+using infrastructure.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace infrastructure.Services;
 
@@ -13,11 +15,11 @@ public sealed class ImageService : IImageService
     private readonly string _rootUrl;
     private readonly ILogger<ImageService> _logger;
 
-    public ImageService(IConfiguration configuration, ILogger<ImageService> logger)
+    public ImageService(ILogger<ImageService> logger, IOptions<ImageStorageOptions> options)
     {
-        _rootPath = configuration["ImageStorage:BasePath"]
+        _rootPath = options.Value.BasePath
             ?? throw new InvalidOperationException("ImageStorage:BasePath is not configured.");
-        _rootUrl = configuration["ImageStorage:BaseUrl"]
+        _rootUrl = options.Value.BaseUrl
             ?? throw new InvalidOperationException("ImageStorage:BaseUrl is not configured.");
         _logger = logger;
     }

@@ -1,10 +1,13 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.BackgroundJobs;
 using Application.Common.Interfaces.Repositories;
 using Application.Common.Interfaces.Services;
+using infrastructure.BackgroundJobs;
 using infrastructure.Data;
 using infrastructure.Data.Interceptors;
-using infrastructure.BackgroundJobs;
+using infrastructure.HealthChecks;
 using infrastructure.Identity;
+using infrastructure.Options;
 using infrastructure.Repositories;
 using infrastructure.Services;
 using infrastructure.UnitOfWork;
@@ -13,9 +16,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
+using System.Net.Mail;
 using System.Text;
-using Application.Common.Interfaces.BackgroundJobs;
-using infrastructure.HealthChecks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -72,6 +75,19 @@ public static class DependencyInjection
 
         services.AddSingleton<IBackgroundJobTracker, BackgroundJobTracker>();
 
+        //Options configuration
+        services
+            .AddOptions<JwtSettings>()
+            .BindConfiguration(JwtSettings.SectionName);
+
+        services
+            .AddOptions<ImageStorageOptions>()
+            .BindConfiguration(ImageStorageOptions.SectionName);
+
+        services
+            .AddOptions<EmailOptions>()
+            .BindConfiguration(EmailOptions.SectionName);
+
         //configure authentication
         services.AddAuthentication(options =>
         {
@@ -79,7 +95,9 @@ public static class DependencyInjection
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         }).AddJwtBearer(options =>
         {
-            var jwtSettings = configuration.GetSection("JwtSettings");
+            var jwtSettings = configuration
+                .GetSection(JwtSettings.SectionName)
+                .Get<JwtSettings>()!;
 
             options.TokenValidationParameters = new()
             {
@@ -87,12 +105,28 @@ public static class DependencyInjection
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings["Issuer"],
-                ValidAudience = jwtSettings["Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!)),
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
                 ClockSkew = TimeSpan.Zero
             };
         });
+
+        //email configuration
+        var emailSettings = configuration
+            .GetSection(EmailOptions.SectionName)
+            .Get<EmailOptions>()!;
+
+        services
+            .AddFluentEmail(emailSettings.FromEmail, emailSettings.FromName)
+            .AddSmtpSender(new SmtpClient(emailSettings.SmtpHost)
+            {
+                Port = emailSettings.SmtpPort,
+                Credentials = new NetworkCredential(
+                    emailSettings.Username,
+                    emailSettings.Password),
+                EnableSsl = emailSettings.EnableSsl
+            });
 
         //configure health checks
         services.AddHealthChecks()
