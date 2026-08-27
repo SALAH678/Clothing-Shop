@@ -21,8 +21,9 @@ public class AccountConfiguration : AuditableEntityConfiguration<Account>
             .HasMaxLength(50);
 
         builder.Property(account => account.ProviderAccountId)
-            .IsRequired()
-            .HasMaxLength(255);
+            .IsRequired(false)
+            .HasMaxLength(255)
+            .HasDefaultValue(null);
 
         builder.Property(account => account.Password)
             .IsRequired(false)
