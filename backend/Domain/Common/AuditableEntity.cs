@@ -12,6 +12,6 @@ public abstract class AuditableEntity : Entity
 
     public DateTimeOffset CreatedAtUtc { get; set; }
 
-    public DateTimeOffset LastModifiedUtc { get; set; }
+    public DateTimeOffset? LastModifiedUtc { get; set; }
 
 }

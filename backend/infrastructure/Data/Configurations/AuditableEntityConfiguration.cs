@@ -16,6 +16,7 @@ public abstract class AuditableEntityConfiguration<TEntity> : IEntityTypeConfigu
             .HasDefaultValueSql("now() AT TIME ZONE 'UTC'");
 
         builder.Property(entity => entity.LastModifiedUtc)
-            .IsRequired();
+            .IsRequired(false)
+            .HasDefaultValue(null);
     }
 }

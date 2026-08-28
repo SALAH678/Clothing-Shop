@@ -1,6 +1,8 @@
 namespace Application.Features.Carts.Dtos;
 
-public record CartDto(
-    Guid Id,
-    decimal TotalAmount,
-    IReadOnlyCollection<CartItemDto> Items);
+public class CartDto
+{
+    public Guid Id { get; init; }
+    public decimal TotalAmount { get; init; }
+    public IReadOnlyCollection<CartItemDto> Items { get; init; } = [];
+}

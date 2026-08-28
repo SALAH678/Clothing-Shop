@@ -4,6 +4,7 @@ using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
 using Domain.Common.ValueObjects.PhoneNumber;
 using Domain.Purchases;
+using Domain.Users.Events;
 using Domain.Users.Accounts;
 using Domain.Users.Enum;
 using Domain.Users.RefreshTokens;
@@ -55,12 +56,11 @@ public class User : AuditableEntity
         if (error is not null)
             return error.Value;
 
-        return new User(
-            firstName!.Trim(),
-            lastName!.Trim(),
-            email!,
-            phoneNumber!,
-            role!.Value);
+        var user = new User(firstName!.Trim(), lastName!.Trim(), email!, phoneNumber!, role!.Value);
+
+        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id));
+
+        return user;
     }
 
     public Result<Updated> Update(string? firstName, string? lastName, Email? email, PhoneNumber? phoneNumber)
