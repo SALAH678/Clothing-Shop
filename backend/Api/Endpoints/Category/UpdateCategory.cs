@@ -1,14 +1,14 @@
 using Api.Extensions;
 using Application.Features.Categories.Commands.UpdateCategory;
 using Application.Features.Categories.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
+using static Api.Endpoints.Category.UpdateCategory;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Category;
 
-public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryCommand, Result<CategoryDto>>
+public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryRequest, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -16,7 +16,8 @@ public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryCommand
     {
         Put("/{categoryId:guid}");
         Group<CategoryGroup>();
-        AllowAnonymous();
+        Roles("Admin");
+        AllowFileUploads();
 
         Summary(s =>
         {
@@ -40,13 +41,27 @@ public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryCommand
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(UpdateCategoryCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(UpdateCategoryRequest req, CancellationToken ct)
     {
-        var result = await _mediator.Send(req, ct);
+        var command = new UpdateCategoryCommand(
+            req.CategoryId,
+            req.CategoryName,
+            req.Image?.OpenReadStream(),
+            req.Image?.FileName);
+
+        var result = await _mediator.Send(command, ct);
 
         return result.Match(
             onSuccess: value => Results.Ok(value),
             onError: errors => errors.ToProblem()
         );
+    }
+
+    public sealed class UpdateCategoryRequest
+    {
+        public Guid CategoryId { get; set; }
+        public string? CategoryName { get; set; }
+        public IFormFile? Image { get; set; }
+        public string? ImageFileName { get; set; }
     }
 }

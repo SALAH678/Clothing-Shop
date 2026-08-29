@@ -1,10 +1,12 @@
-﻿
+
 namespace Application.Features.Categories.Dtos
 {
-    public record CategoryDto(
-        Guid Id,
-        string CategoryName,
-        string? ImageUrl,
-        List<CategoryDto>? Subcategories = null);
+    public class CategoryDto
+    {
+        public Guid Id { get; init; }
+        public string CategoryName { get; init; } = string.Empty;
+        public string? ImageUrl { get; init; }
+        public List<CategoryDto>? Subcategories { get; init; }
+    }
 }
 

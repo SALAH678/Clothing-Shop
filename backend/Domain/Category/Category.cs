@@ -37,7 +37,7 @@ public class Category : AuditableEntity
         if (error is not null)
             return error.Value;
 
-        return new Category(categoryName!.Trim(), imageUrl!.Trim(), parentCategoryId);
+        return new Category(categoryName!.Trim(), imageUrl?.Trim(), parentCategoryId);
     }
 
     public Result<Updated> Update(string? categoryName, string? imageUrl)
@@ -109,7 +109,7 @@ public class Category : AuditableEntity
             if (imageUrl.Length > 500)
                 return CategoryErrors.ImageUrlTooLong;
 
-            if (!IsValidUrl(imageUrl))
+            if (!IsValidImagePath(imageUrl))
                 return CategoryErrors.InvalidImageUrl;
         }
 
@@ -119,9 +119,9 @@ public class Category : AuditableEntity
         return null;
     }
 
-    private static bool IsValidUrl(string url)
+    private static bool IsValidImagePath(string path)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        return !string.IsNullOrWhiteSpace(path)
+            && path.StartsWith("/images/", StringComparison.OrdinalIgnoreCase);
     }
 }

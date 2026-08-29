@@ -1,22 +1,21 @@
 using Api.Extensions;
 using Application.Features.Categories.Dtos;
 using Application.Features.Categories.Queries.GetCategories;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Category;
 
-public class GetCategories(IMediator mediator) : EndpointWithoutRequest<Result<List<CategoryDto>>>
+public class GetCategories(IMediator mediator) : EndpointWithoutRequest<IResult>
 {
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
     {
-        Get("/");
+        Get("");
         Group<CategoryGroup>();
-        AllowAnonymous();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -29,7 +28,7 @@ public class GetCategories(IMediator mediator) : EndpointWithoutRequest<Result<L
             .Produces<List<CategoryDto>>(200));
     }
 
-    public override async Task<IResult> HandleAsync(CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(CancellationToken ct)
     {
         var result = await _mediator.Send(new GetCategoriesQuery(), ct);
 

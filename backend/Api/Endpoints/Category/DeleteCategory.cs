@@ -7,7 +7,7 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Category;
 
-public class DeleteCategory(IMediator mediator) : Endpoint<DeleteCategoryCommand, Result<Deleted>>
+public class DeleteCategory(IMediator mediator) : Endpoint<DeleteCategoryCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -15,7 +15,7 @@ public class DeleteCategory(IMediator mediator) : Endpoint<DeleteCategoryCommand
     {
         Delete("/{categoryId:guid}");
         Group<CategoryGroup>();
-        AllowAnonymous();
+        Roles("Admin");
 
         Summary(s =>
         {
@@ -33,7 +33,7 @@ public class DeleteCategory(IMediator mediator) : Endpoint<DeleteCategoryCommand
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(DeleteCategoryCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(DeleteCategoryCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

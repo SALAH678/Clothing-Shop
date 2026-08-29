@@ -7,7 +7,7 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Category;
 
-public class UnAssignSubCategoriesToCategory(IMediator mediator) : Endpoint<UnAssignSubCategoriesToCategoryCommand, Result<Success>>
+public class UnAssignSubCategoriesToCategory(IMediator mediator) : Endpoint<UnAssignSubCategoriesToCategoryCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -15,7 +15,7 @@ public class UnAssignSubCategoriesToCategory(IMediator mediator) : Endpoint<UnAs
     {
         Delete("/{categoryId:guid}/subcategories");
         Group<CategoryGroup>();
-        AllowAnonymous();
+        Roles("Admin");
 
         Summary(s =>
         {
@@ -42,7 +42,7 @@ public class UnAssignSubCategoriesToCategory(IMediator mediator) : Endpoint<UnAs
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(UnAssignSubCategoriesToCategoryCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(UnAssignSubCategoriesToCategoryCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

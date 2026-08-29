@@ -10,6 +10,9 @@ namespace Application.Features.Categories.Mappers
         {
             CreateMap<Category, CategoryDto>()
                 .ForMember(
+                dest => dest.ImageUrl,
+                opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.ImageUrl) ? null : src.ImageUrl))
+                .ForMember(
                 dest => dest.Subcategories,
                 opt => opt.MapFrom(src => src.Subcategories))// this means that the Subcategories property of the
                                                              // CategoryDto will be populated with the Subcategories property of the Category entity.(u're telling him what will do manually)

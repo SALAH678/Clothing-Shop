@@ -1,22 +1,22 @@
 using Api.Extensions;
 using Application.Features.Categories.Commands.CreateCategory;
 using Application.Features.Categories.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Category;
 
-public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryCommand, Result<CategoryDto>>
+public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryRequest, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
     {
-        Post("/");
+        Post("");
         Group<CategoryGroup>();
-        AllowAnonymous();
+        Roles("Admin");
+        AllowFileUploads();
 
         Summary(s =>
         {
@@ -37,9 +37,15 @@ public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryCommand
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(CreateCategoryCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(CreateCategoryRequest req, CancellationToken ct)
     {
-        var result = await _mediator.Send(req, ct);
+        var command = new CreateCategoryCommand(
+            req.CategoryName,
+            req.Image?.OpenReadStream(),
+            req?.ImageFileName);
+
+
+        var result = await _mediator.Send(command, ct);
 
         return result.Match(
             onSuccess: value => Results.Ok(value),
@@ -48,6 +54,11 @@ public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryCommand
     }
 }
 
+public sealed class CreateCategoryRequest
+{
+    public string CategoryName { get; set; } = string.Empty;
+    public IFormFile? Image { get; set; }
+    public string? ImageFileName {  get; set; }
+}
 
-    
 
