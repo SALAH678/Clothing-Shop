@@ -58,7 +58,6 @@ public class UserConfiguration : AuditableEntityConfiguration<User>
             .HasMaxLength(15);
 
         builder.HasIndex(user => user.PhoneNumber)
-            .IsUnique()
             .HasDatabaseName("IX_User_PhoneNumber");
 
         builder.HasOne(user => user.Cart)

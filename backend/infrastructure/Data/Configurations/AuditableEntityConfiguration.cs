@@ -12,11 +12,9 @@ public abstract class AuditableEntityConfiguration<TEntity> : IEntityTypeConfigu
         builder.HasKey(c => c.Id);
 
         builder.Property(entity => entity.CreatedAtUtc)
-            .IsRequired()
-            .HasDefaultValueSql("now() AT TIME ZONE 'UTC'");
+            .IsRequired();
 
         builder.Property(entity => entity.LastModifiedUtc)
-            .IsRequired(false)
-            .HasDefaultValue(null);
+            .IsRequired(false);
     }
 }
