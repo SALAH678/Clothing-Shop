@@ -1,14 +1,13 @@
 using Api.Extensions;
 using Application.Features.Users.Dtos;
 using Application.Features.Users.Query.GetCurrentUserProfile;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.User;
 
-public class GetCurrentUserProfile(IMediator mediator) : EndpointWithoutRequest<Result<UserDto>>
+public class GetCurrentUserProfile(IMediator mediator) : EndpointWithoutRequest<IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -16,6 +15,7 @@ public class GetCurrentUserProfile(IMediator mediator) : EndpointWithoutRequest<
     {
         Get("/current");
         Group<UserGroup>();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -32,7 +32,7 @@ public class GetCurrentUserProfile(IMediator mediator) : EndpointWithoutRequest<
             .ProducesProblemDetails(404));
     }
 
-    public override async Task<IResult> HandleAsync(CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(CancellationToken ct)
     {
         var result = await _mediator.Send(new GetCurrentUserProfileQuery(), ct);
 

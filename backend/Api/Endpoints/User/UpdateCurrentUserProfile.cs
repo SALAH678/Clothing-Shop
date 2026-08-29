@@ -1,14 +1,13 @@
 using Api.Extensions;
 using Application.Features.Users.Command.UpdateCurrentUserProfile;
 using Application.Features.Users.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.User;
 
-public class UpdateCurrentUserProfile(IMediator mediator) : Endpoint<UpdateCurrentUserProfileCommand, Result<UserDto>>
+public class UpdateCurrentUserProfile(IMediator mediator) : Endpoint<UpdateCurrentUserProfileCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -16,6 +15,7 @@ public class UpdateCurrentUserProfile(IMediator mediator) : Endpoint<UpdateCurre
     {
         Put("/current");
         Group<UserGroup>();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -40,7 +40,7 @@ public class UpdateCurrentUserProfile(IMediator mediator) : Endpoint<UpdateCurre
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(UpdateCurrentUserProfileCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(UpdateCurrentUserProfileCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

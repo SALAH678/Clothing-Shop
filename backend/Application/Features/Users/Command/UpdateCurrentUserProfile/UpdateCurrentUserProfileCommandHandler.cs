@@ -7,21 +7,29 @@ using Domain.Common.ValueObjects.Email;
 using Domain.Common.ValueObjects.PhoneNumber;
 using MediatR;
 
+using Microsoft.Extensions.Logging;
 namespace Application.Features.Users.Command.UpdateCurrentUserProfile;
 
 public class UpdateCurrentUserProfileCommandHandler(IUnitOfWork unitOfWork,
-    IMapper mapper, IUser user) : IRequestHandler<UpdateCurrentUserProfileCommand, Result<UserDto>>
+    IMapper mapper, IUser user, ILogger<UpdateCurrentUserProfileCommandHandler> logger) : IRequestHandler<UpdateCurrentUserProfileCommand, Result<UserDto>>
 {
+    private readonly ILogger<UpdateCurrentUserProfileCommandHandler> _logger = logger;
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
     private readonly IUser _user = user;
 
     public async Task<Result<UserDto>> Handle(UpdateCurrentUserProfileCommand request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Update current user profile requested for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
+
         var user = await _unitOfWork.Users.GetByIdAsync(_user.UserId, cancellationToken);
 
         if (user is null)
+        {
+            _logger.LogWarning("Update current user profile failed: user not found for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
             return ApplicationErrors.UserNotFound;
+        }
 
         Result<PhoneNumber>? newNumber = null;
 
@@ -41,16 +49,22 @@ public class UpdateCurrentUserProfileCommandHandler(IUnitOfWork unitOfWork,
         );
 
         if (!updatedUser.IsSuccess)
+        {
+            _logger.LogWarning("Update current user profile failed for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
             return updatedUser.TopError;
+        }
 
         try
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Update current user profile failed: unable to save changes for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
             return ApplicationErrors.UpdateUserFailed;
         }
+
+        _logger.LogInformation("Current user profile updated successfully for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
 
         return _mapper.Map<UserDto>(user);
     }
