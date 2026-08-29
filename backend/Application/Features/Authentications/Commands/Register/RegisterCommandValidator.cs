@@ -35,5 +35,10 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Phone number is required.")
             .Matches(PhoneRegex).WithMessage("Phone number must be exactly 10 digits long.");
+
+        RuleFor(x => x.Role)
+            .NotEmpty().WithMessage("Role is required.")
+            .Must(role => role == "Customer" || role == "Admin").WithMessage("Role must be either 'Customer' or 'Admin'.")
+            .When(x => !string.IsNullOrEmpty(x.Role));
     }
 }

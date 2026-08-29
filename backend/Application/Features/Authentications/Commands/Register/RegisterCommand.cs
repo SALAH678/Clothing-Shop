@@ -8,4 +8,5 @@ public sealed record RegisterCommand(
      string LastName,
      string PhoneNumber,
      string Email,
-     string Password) : IRequest<Result<string>>;
+     string Password,
+     string? Role) : IRequest<Result<string>>;

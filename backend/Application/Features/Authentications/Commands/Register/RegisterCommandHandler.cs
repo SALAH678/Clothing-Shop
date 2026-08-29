@@ -14,6 +14,7 @@ using Domain.Users.VerificationTokens.Enum;
 using MediatR;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 namespace Application.Features.Authentications.Command.Register;
 
 public class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordService passwordService,
@@ -53,7 +54,9 @@ public class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordService pas
             return ApplicationErrors.EmailAlreadyExists;
         }
 
-        var user = User.Create(request.FirstName, request.LastName, email.Value, phoneNumber.Value, Role.Customer);
+        Role role = Enum.TryParse<Role>(request.Role, ignoreCase: true, out var parsedRole) ? parsedRole : Role.Customer;
+
+        var user = User.Create(request.FirstName, request.LastName, email.Value, phoneNumber.Value, parsedRole);
 
         if (!user.IsSuccess)
             return user.TopError;
