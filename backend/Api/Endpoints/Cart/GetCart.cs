@@ -1,20 +1,20 @@
 ﻿using Api.Extensions;
 using Application.Features.Carts.Dtos;
 using Application.Features.Carts.Queries.GetCart;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Cart;
-public class GetCart(IMediator mediator) : EndpointWithoutRequest<Result<CartDto>>
+public class GetCart(IMediator mediator) : EndpointWithoutRequest<IResult>
 {
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
     {
-        Get("/");
+        Get("");
         Group<CartGroup>();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -32,7 +32,7 @@ public class GetCart(IMediator mediator) : EndpointWithoutRequest<Result<CartDto
             .ProducesProblemDetails(401)
             .ProducesProblemDetails(500));
     }
-    public override async Task<IResult> HandleAsync(CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(CancellationToken ct)
     {
         var result = await _mediator.Send(new GetCartQuery(), ct);
 

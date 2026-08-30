@@ -68,4 +68,12 @@ public class CartItem : AuditableEntity
 
         return null;
     }
+
+    public void AttachVariant(Variant variant)
+    {
+        if (variant.Id != VariantId)
+            return;
+
+        Variant = variant;
+    }
 }

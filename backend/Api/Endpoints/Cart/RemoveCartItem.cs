@@ -6,14 +6,15 @@ using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Cart;
-public class RemoveCartItem(IMediator mediator) : Endpoint<RemoveCartItemCommand, Result<Deleted>>
+public class RemoveCartItem(IMediator mediator) : Endpoint<RemoveCartItemCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
     {
-        Delete("/remove-item");
+        Delete("/items/{CartItemId:guid}");
         Group<CartGroup>();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -35,7 +36,7 @@ public class RemoveCartItem(IMediator mediator) : Endpoint<RemoveCartItemCommand
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(RemoveCartItemCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(RemoveCartItemCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

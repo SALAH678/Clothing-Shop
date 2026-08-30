@@ -13,5 +13,6 @@ public sealed class CartRepository(AppDbContext context) : Repository<Cart>(cont
             .Include(cart => cart.Items)
                 .ThenInclude(item => item.Variant)
                     .ThenInclude(variant => variant.Product)
+                        .ThenInclude(product => product.Images)
             .FirstOrDefaultAsync(cart => cart.UserId == userId, cancellationToken);
 }

@@ -1,20 +1,20 @@
 ﻿using Api.Extensions;
 using Application.Features.Carts.Commands.AddCartItem;
 using Application.Features.Carts.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Cart;
-public class AddCartItem(IMediator mediator) : Endpoint<AddCartItemCommand, Result<CartDto>>
+public class AddCartItem(IMediator mediator) : Endpoint<AddCartItemCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
     {
-        Post("/add-item");
+        Post("/items/{variantId:guid}");
         Group<CartGroup>();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -36,7 +36,7 @@ public class AddCartItem(IMediator mediator) : Endpoint<AddCartItemCommand, Resu
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(AddCartItemCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(AddCartItemCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

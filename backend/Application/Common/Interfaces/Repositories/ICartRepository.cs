@@ -4,5 +4,5 @@ namespace Application.Common.Interfaces.Repositories;
 
 public interface ICartRepository : IRepository<Cart>
 {
-    Task<Cart?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<Cart?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }

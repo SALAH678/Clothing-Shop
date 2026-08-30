@@ -70,15 +70,15 @@ public class Image : AuditableEntity
         if (imageUrl.Length > 500)
             return ImageErrors.ImageUrlTooLong;
 
-        if (!IsValidUrl(imageUrl))
+        if (!IsValidImagePath(imageUrl))
             return ImageErrors.InvalidImageUrl;
 
         return null;
     }
 
-    private static bool IsValidUrl(string url)
+    private static bool IsValidImagePath(string path)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        return !string.IsNullOrWhiteSpace(path)
+            && path.StartsWith("/images/", StringComparison.OrdinalIgnoreCase);
     }
 }

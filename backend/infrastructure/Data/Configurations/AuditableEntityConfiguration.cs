@@ -11,8 +11,12 @@ public abstract class AuditableEntityConfiguration<TEntity> : IEntityTypeConfigu
     {
         builder.HasKey(c => c.Id);
 
+        builder.Property(c => c.Id)
+            .ValueGeneratedNever();
+
         builder.Property(entity => entity.CreatedAtUtc)
             .IsRequired();
+            
 
         builder.Property(entity => entity.LastModifiedUtc)
             .IsRequired(false);

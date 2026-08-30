@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using FastEndpoints.AspVersioning;
-using FastEndpoints.Swagger;
 
 namespace Api.Endpoints.Cart;
 public class CartGroup : Group
@@ -10,10 +9,10 @@ public class CartGroup : Group
         Configure("api/carts", ep =>
         {
             ep.Options(x => x
-                .WithVersionSet("ClothingStore")
+                .WithVersionSet("ClothingStoreApi")
                 .MapToApiVersion(1.0));
             ep.Description(x => x
-                .AutoTagOverride("Cart")
+                .WithTags("Carts")
                 .WithSummary("Cart endpoints")
                 .WithDescription("Handles cart operations such as adding items, removing items, and viewing the cart."));
         });

@@ -1,6 +1,5 @@
 ﻿
 using Application.Common.Interfaces;
-using Application.Features.Carts.Commands.CreateCart;
 using Domain.Carts;
 using Domain.Users.Events;
 using MediatR;
@@ -8,10 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Carts.EventHandlers;
 
-public sealed class UserCreatedDomainEventHandler(IUnitOfWork unitOfWork,ILogger<CreateCartCommandHandler> logger)
+public sealed class UserCreatedDomainEventHandler(IUnitOfWork unitOfWork,ILogger<UserCreatedDomainEventHandler> logger)
     : INotificationHandler<UserCreatedDomainEvent>
 {
-    private readonly ILogger<CreateCartCommandHandler> _logger = logger;
+    private readonly ILogger<UserCreatedDomainEventHandler> _logger = logger;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task Handle(UserCreatedDomainEvent notification, CancellationToken cancellationToken)
