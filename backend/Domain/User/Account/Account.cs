@@ -8,7 +8,7 @@ public class Account : AuditableEntity
 {
     public Guid UserId { get; private set; }
     public string Provider { get; private set; } = null!;
-    public string ProviderAccountId { get; private set; } = null!;
+    public string? ProviderAccountId { get; private set; }
     public Password? Password { get; private set; }
 
     public User User { get; private set; } = null!;
@@ -17,7 +17,7 @@ public class Account : AuditableEntity
     {
     }
 
-    protected Account(Guid userId, string provider, string providerAccountId, Password? password)
+    protected Account(Guid userId, string provider, string? providerAccountId, Password? password)
         : base(Guid.Empty)
     {
         UserId = userId;
@@ -33,7 +33,7 @@ public class Account : AuditableEntity
         if (error is not null)
             return error.Value;
 
-        return new Account(userId, provider!.Trim(), providerAccountId!.Trim(), password!);
+        return new Account(userId, provider!.Trim(), providerAccountId?.Trim(), password);
     }
 
     public Result<Updated> Update(string? provider, string? providerAccountId, Password? password)
@@ -64,8 +64,11 @@ public class Account : AuditableEntity
         if (string.IsNullOrWhiteSpace(provider))
             return AccountErrors.ProviderRequired;
 
-        if (string.IsNullOrWhiteSpace(providerAccountId))
+        if (providerAccountId != null && string.IsNullOrWhiteSpace(providerAccountId))
             return AccountErrors.ProviderAccountIdRequired;
+
+        if(password != null && string.IsNullOrWhiteSpace(password.Value))
+            return AccountErrors.PasswordRequired;
 
         return null;
     }

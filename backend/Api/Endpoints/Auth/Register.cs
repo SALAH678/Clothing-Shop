@@ -26,7 +26,8 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand, IResult> /
                 "Doe",
                 "1234567890",
                 "john.doe@gmail.com",
-                "P@ssw0rd123");
+                "P@ssw0rd123",
+                "Customer");
             s.Responses[200] = "Registration successful.";
             s.Responses[400] = "Validation failed for the registration payload.";
             s.Responses[409] = "The provided email address is already in use.";

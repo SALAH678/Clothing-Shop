@@ -10,7 +10,7 @@ public class CategoryGroup : Group
         Configure("api/categories", ep =>
         {
             ep.Options(x => x
-                .WithVersionSet("ClothingStore")
+                .WithVersionSet("ClothingStoreApi")
                 .MapToApiVersion(1.0));
             ep.Description(x => x
                 .WithTags("Categories")

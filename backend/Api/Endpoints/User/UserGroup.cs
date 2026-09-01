@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using FastEndpoints.AspVersioning;
-using FastEndpoints.Swagger;
 
 namespace Api.Endpoints.User;
 public class UserGroup : Group
@@ -10,10 +9,10 @@ public class UserGroup : Group
         Configure("api/users", ep =>
         {
             ep.Options(x => x
-                .WithVersionSet("ClothingStore")
+                .WithVersionSet("ClothingStoreApi")
                 .MapToApiVersion(1.0));
             ep.Description(x => x
-                .AutoTagOverride("User")
+                .WithTags("Users")
                 .WithSummary("User endpoints")
                 .WithDescription("Handles user operations such as retrieving user details, listing users, and managing user accounts."));
         });

@@ -42,7 +42,7 @@ public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryRequest
         var command = new CreateCategoryCommand(
             req.CategoryName,
             req.Image?.OpenReadStream(),
-            req?.ImageFileName);
+            req.Image?.FileName);
 
 
         var result = await _mediator.Send(command, ct);
@@ -58,7 +58,6 @@ public sealed class CreateCategoryRequest
 {
     public string CategoryName { get; set; } = string.Empty;
     public IFormFile? Image { get; set; }
-    public string? ImageFileName {  get; set; }
 }
 
 

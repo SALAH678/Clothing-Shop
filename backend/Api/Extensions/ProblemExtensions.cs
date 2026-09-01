@@ -34,12 +34,20 @@ public static class ProblemExtensions
             _ => StatusCodes.Status500InternalServerError,
         };
 
-        return Results.Problem(statusCode: statusCode, title: error.Description);
+        return Results.Problem(
+            statusCode: statusCode,
+            title: error.Description,
+            detail: error.Code 
+        );
     }
 
     private static IResult ValidationProblem(List<Error> errors)
     {
-        var errorsDict = errors.ToDictionary(e => e.Code, e => new[] { e.Description });
+        var errorsDict = errors.GroupBy(e => e.Code)
+        .ToDictionary(
+            g => g.Key,
+            g => g.Select(e => e.Description).ToArray()
+        );
 
         var problemDetails = new ValidationProblemDetails(errorsDict) // here ValidationProblemDetails is used to formats validation
                                                                       // failures into the standardized RFC 7807 Problem Details JSON schema.
@@ -47,6 +55,6 @@ public static class ProblemExtensions
             Status = StatusCodes.Status400BadRequest
         };
 
-        return Results.Json(problemDetails, statusCode: StatusCodes.Status400BadRequest);
+        return Results.ValidationProblem(errorsDict, statusCode: StatusCodes.Status400BadRequest);
     }
 }

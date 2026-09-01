@@ -13,6 +13,7 @@ public class GetAllUsers(IMediator mediator) : EndpointWithoutRequest<IResult>
 
     public override void Configure()
     {
+        Get("");
         Group<UserGroup>();
         Roles("Admin");
 
