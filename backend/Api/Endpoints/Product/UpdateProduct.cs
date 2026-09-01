@@ -1,14 +1,13 @@
 using Api.Extensions;
 using Application.Features.Products.Commands.UpdateProduct;
 using Application.Features.Products.Dtos;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Product;
 
-public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, Result<ProductDto>>
+public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -16,7 +15,7 @@ public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, 
     {
         Put("/{productId:guid}");
         Group<ProductGroup>();
-        AllowAnonymous();
+        Roles("Admin");
 
         Summary(s =>
         {
@@ -39,7 +38,7 @@ public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, 
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(UpdateProductCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(UpdateProductCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

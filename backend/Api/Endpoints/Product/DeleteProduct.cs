@@ -7,7 +7,7 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Product;
 
-public class DeleteProduct(IMediator mediator) : Endpoint<DeleteProductCommand, Result<Deleted>>
+public class DeleteProduct(IMediator mediator) : Endpoint<DeleteProductCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -15,7 +15,7 @@ public class DeleteProduct(IMediator mediator) : Endpoint<DeleteProductCommand, 
     {
         Delete("/{productId:guid}");
         Group<ProductGroup>();
-        AllowAnonymous();
+        Roles("Admin");
 
         Summary(s =>
         {
@@ -35,7 +35,7 @@ public class DeleteProduct(IMediator mediator) : Endpoint<DeleteProductCommand, 
             .ProducesProblemDetails(500));
     }
 
-    public override async Task<IResult> HandleAsync(DeleteProductCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(DeleteProductCommand req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

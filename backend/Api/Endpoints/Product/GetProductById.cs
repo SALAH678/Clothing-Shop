@@ -1,14 +1,13 @@
 using Api.Extensions;
 using Application.Features.Products.Dtos;
 using Application.Features.Products.Queries.GetProductById;
-using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Product;
 
-public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, Result<ProductDto>>
+public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -16,7 +15,7 @@ public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, 
     {
         Get("/{productId:guid}");
         Group<ProductGroup>();
-        AllowAnonymous();
+        Roles("Admin", "Customer");
 
         Summary(s =>
         {
@@ -34,7 +33,7 @@ public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, 
             .ProducesProblemDetails(404));
     }
 
-    public override async Task<IResult> HandleAsync(GetProductByIdQuery req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(GetProductByIdQuery req, CancellationToken ct)
     {
         var result = await _mediator.Send(req, ct);
 

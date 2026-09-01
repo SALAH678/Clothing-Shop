@@ -4,6 +4,9 @@ namespace Application.Features.Products.Commands.CreateProduct;
 
 public sealed class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png", ".webp"];
+    private const long MaxImageSizeBytes = 5 * 1024 * 1024;
+
     public CreateProductCommandValidator()
     {
         RuleFor(x => x.Name)
@@ -46,6 +49,29 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
 
                     variant.RuleFor(v => v.StockQuantity)
                         .GreaterThanOrEqualTo(0).WithMessage("Variant stock quantity cannot be negative.");
+                });
+        });
+
+        When(x => x.Images is not null, () =>
+        {
+            RuleForEach(x => x.Images!)
+                .ChildRules(image =>
+                {
+                    image.RuleFor(i => i.fileName)
+                        .NotEmpty().WithMessage("Image file name is required.")
+                        .Must(fileName => AllowedImageExtensions.Contains(
+                            Path.GetExtension(fileName).ToLowerInvariant()))
+                        .WithMessage("Only .jpg, .jpeg, .png, and .webp files are supported.");
+
+                    image.RuleFor(i => i.ImageContent)
+                        .NotNull().WithMessage("Image content is required.")
+                        .Must(stream => stream.Length > 0)
+                        .WithMessage("Image file cannot be empty.")
+                        .Must(stream => stream.Length <= MaxImageSizeBytes)
+                        .WithMessage("Image must be smaller than 5MB.");
+
+                    image.RuleFor(i => i.IsMain)
+                        .NotNull().WithMessage("IsMain property is required.");
                 });
         });
     }

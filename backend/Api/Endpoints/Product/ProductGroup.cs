@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using FastEndpoints.AspVersioning;
-using FastEndpoints.Swagger;
 
 namespace Api.Endpoints.Product;
 public class ProductGroup : Group
@@ -10,10 +9,10 @@ public class ProductGroup : Group
         Configure("api/products", ep =>
         {
             ep.Options(x => x
-                .WithVersionSet("ClothingStore")
+                .WithVersionSet("ClothingStoreApi")
                 .MapToApiVersion(1.0));
             ep.Description(x => x
-                .AutoTagOverride("Product")
+                .WithTags("Products")
                 .WithSummary("Product endpoints")
                 .WithDescription("Handles product operations such as retrieving product details, listing products, and managing product inventory."));
         });

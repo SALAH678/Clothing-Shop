@@ -32,7 +32,7 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
         query = query.Where(product => product.CategoryId == categoryId);
 
         if(!string.IsNullOrWhiteSpace(productFilter.Search))
-            query = query.Where(product => product.Name.Contains(productFilter.Search));
+            query = query.Where(product => product.Name.ToLower().Contains(productFilter.Search.ToLower()));
 
         if (productFilter.MinPrice.HasValue)
             query = query.Where(product => product.BasePrice >= productFilter.MinPrice.Value);
@@ -40,8 +40,8 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
         if (productFilter.MaxPrice.HasValue)
             query = query.Where(product => product.BasePrice <= productFilter.MaxPrice.Value);
 
-        if(!string.IsNullOrWhiteSpace(productFilter.size))
-            query = query.Where(product => product.Variants.Any(variant => variant.Size == productFilter.size));
+        //if(!string.IsNullOrWhiteSpace(productFilter.size))
+        //    query = query.Where(product => product.Variants.Any(variant => variant.Size == productFilter.size));
 
         bool hasSize = !string.IsNullOrWhiteSpace(productFilter.size);
         bool hasColor = !string.IsNullOrWhiteSpace(productFilter.color);
@@ -58,16 +58,12 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
 
         var itemsNumber = await query.CountAsync(cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(productFilter.SortBy))
-        {
-            if (productFilter.Descending)
-                query = query.OrderByDescending(product => product.BasePrice);
-            else
-                query = query.OrderBy(product => product.BasePrice);
-        }
-
-        if (productFilter.Descending)
-            query = query.OrderByDescending(product => product.CreatedAtUtc);
+        if (!string.IsNullOrWhiteSpace(productFilter.SortBy) && productFilter.SortBy.Equals("price", StringComparison.OrdinalIgnoreCase))
+            query = productFilter.Descending ? query.OrderByDescending(p => p.BasePrice)
+                : query.OrderBy(p => p.BasePrice);
+        else
+            query = productFilter.Descending ? query.OrderByDescending(p => p.CreatedAtUtc)
+                : query.OrderBy(p => p.CreatedAtUtc);
 
         var products = await query
             .Include(product => product.Variants)
