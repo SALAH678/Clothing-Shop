@@ -33,11 +33,12 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(connectionString);
 
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
+        services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
         //configure dbcontext to use postgresql and add interceptor to it
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
             options.UseNpgsql(connectionString);
-            options.AddInterceptors(sp.GetRequiredService<ISaveChangesInterceptor>());
+            options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
         });
 
         //Repositories
@@ -89,15 +90,16 @@ public static class DependencyInjection
             .BindConfiguration(EmailOptions.SectionName);
 
         //configure authentication
+        var jwtSettings = configuration
+            .GetSection(JwtSettings.SectionName)
+            .Get<JwtSettings>()!;
+            
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         }).AddJwtBearer(options =>
         {
-            var jwtSettings = configuration
-                .GetSection(JwtSettings.SectionName)
-                .Get<JwtSettings>()!;
 
             options.TokenValidationParameters = new()
             {

@@ -7,7 +7,40 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Features\Products\Queries\GetAllProducts\**" />
+    <EmbeddedResource Remove="Features\Products\Queries\GetAllProducts\**" />
+    <None Remove="Features\Products\Queries\GetAllProducts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Carts\Commands\AddCartItem\" />
+    <Folder Include="Features\Carts\Commands\RemoveCartItem\" />
+    <Folder Include="Features\Carts\Dtos\" />
+    <Folder Include="Features\Carts\Mappers\" />
+    <Folder Include="Features\Carts\Queries\GetCart\" />
+    <Folder Include="Features\Categories\Commands\" />
+    <Folder Include="Features\Categories\Dtos\" />
+    <Folder Include="Features\Categories\Mappers\" />
+    <Folder Include="Features\Categories\Queries\" />
+    <Folder Include="Features\Products\Commands\CreateProduct\" />
+    <Folder Include="Features\Products\Commands\DeleteProduct\" />
+    <Folder Include="Features\Products\Commands\UpdateProduct\" />
+    <Folder Include="Features\Products\Dtos\" />
+    <Folder Include="Features\Products\Queries\GetProductById\" />
+    <Folder Include="Features\Purchases\" />
+    <Folder Include="Features\Variants\Commands\" />
+    <Folder Include="Features\Variants\Mappers\" />
+    <Folder Include="Features\Variants\Queries\" />
   </ItemGroup>
 
 </Project>
