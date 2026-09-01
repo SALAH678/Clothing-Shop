@@ -4,5 +4,5 @@ using Domain.Common.Results;
 namespace Application.Common.Interfaces;
 public interface ITokenProvider
 {
-    Result<TokenResponse> GenerateJwtToken(string userId, string email, string role);
+    Result<TokenResponse> GenerateJwtToken(string UserId, string email, string role);
 }

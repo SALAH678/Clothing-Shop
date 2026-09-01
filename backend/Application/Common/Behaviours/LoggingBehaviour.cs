@@ -14,10 +14,10 @@ public class LoggingBehaviour<TRequest>(ILogger<TRequest> logger, IUser user)
     public async Task Process(TRequest request, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
-        var userId = _user?.UserId == null ? Guid.Empty : _user.UserId;
+        var UserId = _user?.UserId == null ? Guid.Empty : _user.UserId;
         string? email = _user?.Email ?? string.Empty;
 
         _logger.LogInformation(
-            "Request: {Name} {@UserId} {@Email} {@Request}", requestName, userId, email, request);
+            "Request: {Name} {@UserId} {@Email} {@Request}", requestName, UserId, email, request);
     }
 }

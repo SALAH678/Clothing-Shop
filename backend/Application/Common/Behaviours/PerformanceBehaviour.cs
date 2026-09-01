@@ -33,11 +33,11 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
         if (elapsedMilliseconds > 500)
         {
             var requestName = typeof(TRequest).Name;
-            var userId = _user?.UserId == null ? Guid.Empty : _user.UserId;
+            var UserId = _user?.UserId == null ? Guid.Empty : _user.UserId;
             var Gmail = _user?.Email ?? string.Empty;
 
             _logger.LogWarning(
-                "Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@UserId} {@Gmail} {@Request}", requestName, elapsedMilliseconds, userId, Gmail, request);
+                "Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@UserId} {@Gmail} {@Request}", requestName, elapsedMilliseconds, UserId, Gmail, request);
         }
 
         return response;
