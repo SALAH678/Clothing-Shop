@@ -24,14 +24,15 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
             .Include(product => product.Images)
             .FirstOrDefaultAsync(product => product.Id == id, ct);
 
-    public async Task<PaginatedList<Product>> GetProductsAsync(Guid categoryId, ProductFilter productFilter,
+    public async Task<PaginatedList<Product>> GetProductsAsync(Guid? categoryId, ProductFilter productFilter,
         int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = _Context.Products.AsNoTracking().AsQueryable();
 
-        query = query.Where(product => product.CategoryId == categoryId);
+        if (categoryId.HasValue)
+            query = query.Where(product => product.CategoryId == categoryId.Value);
 
-        if(!string.IsNullOrWhiteSpace(productFilter.Search))
+        if (!string.IsNullOrWhiteSpace(productFilter.Search))
             query = query.Where(product => product.Name.ToLower().Contains(productFilter.Search.ToLower()));
 
         if (productFilter.MinPrice.HasValue)
@@ -43,17 +44,24 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
         //if(!string.IsNullOrWhiteSpace(productFilter.size))
         //    query = query.Where(product => product.Variants.Any(variant => variant.Size == productFilter.size));
 
-        bool hasSize = !string.IsNullOrWhiteSpace(productFilter.size);
-        bool hasColor = !string.IsNullOrWhiteSpace(productFilter.color);
+        var sizes = productFilter.Sizes?
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .Select(s => s.Trim().ToLower())
+        .ToList();
 
-        if (hasSize || hasColor)
+        var colors = productFilter.Colors?
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim().ToLower())
+            .ToList();
+
+        bool hasSizes = sizes is { Count: > 0 }; //sizes != null && sizes.Count > 0;
+        bool hasColors = colors is { Count: > 0 };
+
+        if (hasSizes || hasColors)
         {
-            string? targetSize = productFilter.size?.Trim().ToLower();
-            string? targetColor = productFilter.color?.Trim().ToLower();
-
             query = query.Where(product => product.Variants.Any(variant =>
-                (!hasSize || variant.Size!.ToLower() == targetSize) &&
-                (!hasColor || variant.Color!.ToLower() == targetColor)));
+                (!hasSizes || sizes!.Contains(variant.Size!.ToLower())) &&
+                (!hasColors || colors!.Contains(variant.Color!.ToLower()))));
         }
 
         var itemsNumber = await query.CountAsync(cancellationToken);

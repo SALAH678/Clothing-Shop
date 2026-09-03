@@ -9,13 +9,13 @@ public sealed record ProductFilter(
     string? Search,
     decimal? MinPrice,
     decimal? MaxPrice,
-    string? size,
-    string? color,
+    List<string>? Sizes,
+    List<string>? Colors,
     string? SortBy,
     bool Descending);
 
 public sealed record GetProductsQuery(
-    Guid CategoryId,
+    Guid? CategoryId,
     int PageNumber,
     int PageSize,
     ProductFilter Filter) : IRequest<Result<PaginatedList<ProductDto>>>;

@@ -15,7 +15,7 @@ public class GetCategories(IMediator mediator) : EndpointWithoutRequest<IResult>
     {
         Get("");
         Group<CategoryGroup>();
-        Roles("Admin", "Customer");
+        AllowAnonymous();
 
         Summary(s =>
         {
