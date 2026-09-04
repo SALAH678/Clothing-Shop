@@ -1,6 +1,7 @@
 using Api.Extensions;
 using Application.Features.Products.Commands.CreateProduct;
 using Application.Features.Products.Dtos;
+using CreateImageDto = Application.Features.Products.Commands.CreateProduct.ImageDto;
 using FastEndpoints;
 using MediatR;
 using System.Text.Json;
@@ -68,11 +69,11 @@ public class CreateProduct(IMediator mediator) : Endpoint<CreateProductRequest, 
             }
         }
 
-        List<ImageDto>? images = null;
+        List<CreateImageDto>? images = null;
         if (req.Images is { Count: > 0 })
         {
             images = req.Images
-                .Select((file, index) => new ImageDto(
+            .Select((file, index) => new CreateImageDto(
                     file.FileName,
                     file.OpenReadStream(),
                     IsMain: req.MainImageIndex == index))
