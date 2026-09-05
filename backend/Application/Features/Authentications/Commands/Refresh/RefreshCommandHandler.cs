@@ -5,15 +5,12 @@ using Application.Features.Authentications.Dtos;
 using Application.Features.Users.Dtos;
 using AutoMapper;
 using Domain.Common.Results;
-using Domain.Common.ValueObjects.Email;
 using Domain.Users.RefreshTokens;
 using MediatR;
-
 using Microsoft.Extensions.Logging;
 namespace Application.Features.Authentications.Command.Refresh;
 
-public class RefreshCommandHandler(IUnitOfWork unitOfWork,
-        IMapper mapper, ITokenHasherService tokenHasherService,
+public class RefreshCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ITokenHasherService tokenHasherService,
         ITokenProvider tokenProvider, ILogger<RefreshCommandHandler> logger) : IRequestHandler<RefreshCommand, Result<AuthResponse>>
 {
     private readonly ILogger<RefreshCommandHandler> _logger = logger;
@@ -25,7 +22,7 @@ public class RefreshCommandHandler(IUnitOfWork unitOfWork,
 
     public async Task<Result<AuthResponse>> Handle(RefreshCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Token refresh attempt for Email: {Email}", request.email);
+        _logger.LogInformation("Token refresh attempt");
 
         var requestedRefreshTokenHash = _tokenHasherService.HashToken(request.refreshToken);
 
@@ -35,28 +32,29 @@ public class RefreshCommandHandler(IUnitOfWork unitOfWork,
 
         if (refreshTokenInDb is null)
         {
-            _logger.LogWarning("Refresh failed: refresh token not found for Email: {Email}", request.email);
+            _logger.LogWarning("Refresh failed: refresh token not found");
             return ApplicationErrors.RefreshTokenNotFound;
         }
 
         if (refreshTokenInDb.IsRevoked)
         {
-            _logger.LogWarning("Refresh failed: refresh token is revoked for Email: {Email}, UserId: {UserId}", request.email, refreshTokenInDb.UserId);
+            _logger.LogWarning("Refresh failed: refresh token is revoked for UserId: {UserId}", refreshTokenInDb.UserId);
             return ApplicationErrors.RefreshTokenIsRevoked;
         }
 
         if (refreshTokenInDb.ExpiresAtUtc <= DateTimeOffset.UtcNow)
         {
-            _logger.LogWarning("Refresh failed: refresh token expired for Email: {Email}, UserId: {UserId}", request.email, refreshTokenInDb.UserId);
+            _logger.LogWarning("Refresh failed: refresh token expired for UserId: {UserId}", refreshTokenInDb.UserId);
             return ApplicationErrors.RefreshTokenExpired;
         }
 
-        var emailResult = Email.Create(request.email);
-
-        var user = await _unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
+        var user = await _unitOfWork.Users.GetByIdAsync(refreshTokenInDb.UserId, cancellationToken);
 
         if (user is null)
+        {
+            _logger.LogWarning("Refresh failed: user not found for UserId: {UserId}", refreshTokenInDb.UserId);
             return ApplicationErrors.InvalidRefreshRequest;
+        }
 
         refreshTokenInDb.Revoke();
 
@@ -66,17 +64,32 @@ public class RefreshCommandHandler(IUnitOfWork unitOfWork,
            user.UserRole.ToString());
 
         if (!tokensResult.IsSuccess)
+        { 
+            _logger.LogError("Refresh failed: unable to generate tokens for UserId: {UserId}", user.Id);
             return tokensResult.TopError;
+        }
 
-        var newHashedRefreshToken = _tokenHasherService.HashToken(tokensResult.Value.RefreshToken!);
+        var refreshTokenExpiresAtUtc = DateTimeOffset.UtcNow.AddDays(7);
+        var finalTokens = tokensResult.Value with { RefreshTokenExpiresAtUtc = refreshTokenExpiresAtUtc };
+
+        if (finalTokens.RefreshToken is null)
+        {
+            _logger.LogError("Refresh failed: generated refresh token is null for UserId: {UserId}", user.Id);
+            return ApplicationErrors.RefreshFailed;
+        }
+
+        var newHashedRefreshToken = _tokenHasherService.HashToken(finalTokens.RefreshToken);
 
         var refreshTokenResult = RefreshToken.Create(
             user.Id,
             newHashedRefreshToken,
-            DateTimeOffset.UtcNow.AddDays(7));
+            refreshTokenExpiresAtUtc);
 
         if (!refreshTokenResult.IsSuccess)
+        {
+            _logger.LogError("Refresh failed: unable to create new refresh token for UserId: {UserId}", user.Id);
             return refreshTokenResult.TopError;
+        }
 
         _unitOfWork.RefreshTokens.Create(refreshTokenResult.Value);
 
@@ -86,14 +99,14 @@ public class RefreshCommandHandler(IUnitOfWork unitOfWork,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Refresh failed: unable to save new refresh token for Email: {Email}, UserId: {UserId}", request.email, user.Id);
+            _logger.LogError(ex, "Refresh failed: unable to save new refresh token for Email: {Email}, UserId: {UserId}", user.Email.Value, user.Id);
             return ApplicationErrors.RefreshFailed;
         }
 
-        _logger.LogInformation("Token refresh successful for Email: {Email}, UserId: {UserId}", request.email, user.Id);
+        _logger.LogInformation("Token refresh successful for Email: {Email}, UserId: {UserId}", user.Email.Value, user.Id);
 
         return new AuthResponse(
             User: _mapper.Map<UserDto>(user),
-            Tokens: tokensResult.Value);
+            Tokens: finalTokens);
     }
 }

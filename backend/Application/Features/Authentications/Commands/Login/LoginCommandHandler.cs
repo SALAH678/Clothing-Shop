@@ -30,6 +30,13 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,
 
         var emailResult = Email.Create(request.Email);
 
+        if (!emailResult.IsSuccess)
+        {
+            _logger.LogWarning("Login failed: invalid email format for Email: {Email}", request.Email);
+
+            return ApplicationErrors.InvalidCredentials;
+        }
+
         var user = await _unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
 
         if (user is null)
@@ -46,30 +53,59 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,
 
         var account = await _unitOfWork.Accounts.GetByUserIdAsync(user.Id, cancellationToken);
 
-        if(account is null)
+        if(account is null || account.Password is null)
             return ApplicationErrors.InvalidCredentials;
+
+        if (account is null || account.Password is null)
+        {
+            _logger.LogWarning(
+                "Login failed: invalid credentials for Email: {Email}, UserId: {UserId}", request.Email,
+                user.Id);
+
+            return ApplicationErrors.InvalidCredentials;
+        }
 
         if (!_passwordService.VerifyPassword(request.Password, account.Password!.Value))
         {
-            _logger.LogWarning("Login failed: invalid password for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
+            _logger.LogWarning("Login failed: invalid credentials for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
             return ApplicationErrors.InvalidCredentials;
         }
 
         var tokens = _tokenProvider.GenerateJwtToken(user.Id.ToString(), user.Email.Value, user.UserRole.ToString());
 
         if (!tokens.IsSuccess)
+        {
+            _logger.LogError("Login failed: unable to generate tokens for UserId: {UserId}", user.Id);
             return tokens.TopError;
+        }
+           
 
-        var hashedToken = _tokenHasher.HashToken(tokens.Value.RefreshToken!);
+        var refreshTokenExpiresAtUtc = DateTimeOffset.UtcNow.AddDays(7); 
+        var finalTokens = tokens.Value with { RefreshTokenExpiresAtUtc = refreshTokenExpiresAtUtc };
+
+        if (finalTokens.RefreshToken is null)
+        {
+            _logger.LogError(
+                "Login failed: generated refresh token is null for UserId: {UserId}",
+                user.Id);
+
+            return ApplicationErrors.LoginFailed;
+        }
+
+        var hashedToken = _tokenHasher.HashToken(finalTokens.RefreshToken!);
 
         var newRefreshToken = RefreshToken.Create(
-            userId: account.UserId,
+            userId: user.Id,
             value: hashedToken,
-            expiresAtUtc: DateTimeOffset.UtcNow.AddDays(7));
+            expiresAtUtc: refreshTokenExpiresAtUtc);
 
         if (!newRefreshToken.IsSuccess)
+        {
+            _logger.LogError("Login failed: unable to create refresh token for UserId: {UserId}",
+                user.Id);
             return newRefreshToken.TopError;
-
+        }
+            
         _unitOfWork.RefreshTokens.Create(newRefreshToken.Value);
 
         try
@@ -78,14 +114,14 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Login failed: unable to save refresh token for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
+            _logger.LogError(ex, "Login failed: unable to save refresh token for UserId: {UserId}", user.Id);
             return ApplicationErrors.LoginFailed;
         }
 
-        _logger.LogInformation("Login successful for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
+        _logger.LogInformation("Login successful for UserId: {UserId}", user.Id);
 
         return new AuthResponse(
             User: _mapper.Map<UserDto>(user),
-            Tokens: tokens.Value);
+            Tokens: finalTokens);
     }
 }

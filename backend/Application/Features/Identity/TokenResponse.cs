@@ -3,5 +3,6 @@ public record TokenResponse(
         string? AccessToken,
         string? RefreshToken,
         string? TokenType,
-        DateTime AccessTokenExpiration
-    );
+        DateTimeOffset AccessTokenExpiration,
+        DateTimeOffset RefreshTokenExpiresAtUtc
+);

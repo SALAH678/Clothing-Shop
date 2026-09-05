@@ -1,7 +1,8 @@
 ﻿using Application.Common.Interfaces;
 using Application.Features.Identity;
 using Domain.Common.Results;
-using Microsoft.Extensions.Configuration;
+using infrastructure.Options;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,9 +11,9 @@ using System.Text;
 
 namespace infrastructure.Identity;
 
-public class TokenProvider(IConfiguration configuration) : ITokenProvider
+public class TokenProvider(IOptions<JwtSettings> jwtSettingsOptions) : ITokenProvider
 {
-    private readonly IConfiguration _configuration = configuration;
+    private readonly JwtSettings _jwtSettings = jwtSettingsOptions.Value;
 
     public Result<TokenResponse> GenerateJwtToken(string userId, string email, string role)
     {
@@ -27,13 +28,8 @@ public class TokenProvider(IConfiguration configuration) : ITokenProvider
 
     private Result<TokenResponse> Create(string userId, string email, string role)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-
-        var issuer = jwtSettings["Issuer"]!;
-        var audience = jwtSettings["Audience"]!;
-        var secretkey = jwtSettings["SecretKey"]!;
-        var expires = DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["TokenExpirationInMinutes"]!));
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretkey));
+        var expires = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.TokenExpirationInMinutes);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -41,13 +37,13 @@ public class TokenProvider(IConfiguration configuration) : ITokenProvider
                 new Claim(ClaimTypes.NameIdentifier, userId),
                 new Claim(ClaimTypes.Email, email),
                 new Claim(ClaimTypes.Role, role)
-            };
+        };
 
         var accessToken = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
-            expires: expires,
+            expires: expires.UtcDateTime,
             signingCredentials: creds
         );
 
@@ -57,7 +53,8 @@ public class TokenProvider(IConfiguration configuration) : ITokenProvider
             AccessToken: new JwtSecurityTokenHandler().WriteToken(accessToken),
             RefreshToken: refreshToken,
             TokenType: "Bearer",
-            AccessTokenExpiration: expires
+            AccessTokenExpiration: expires,
+            RefreshTokenExpiresAtUtc: default
         );
     }
 

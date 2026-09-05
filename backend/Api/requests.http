@@ -1,0 +1,37 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+### Login
+POST https://localhost:7146/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "bouroucheoussama55@gmail.com",
+  "password": "Oussama55@"
+}
+
+### Refresh
+# @no-cookie-jar
+POST https://localhost:7146/api/auth/refresh
+Content-Type: application/json
+Cookie:
+refreshToken=hTBSgYqveJ1GLNrrxSKBBtjnMuxex2ji1nQIutZ8rRuaqkI7wKOafHZONi0A%2FJRNIYptRuBAYK%2Flswo0uac7Aw%3D%3D
+
+
+{}
+
+###test
+POST https://localhost:7146/api/auth/refresh
+Content-Type: application/json
+X-Test-Header: hello123
+
+{}
+
+### Refresh (Uses the cookie saved automatically from Login above)
+POST https://localhost:7146/api/auth/refresh
+Content-Type: application/json
+{}
+
+### 3. Refresh with Auto-Stored Cookie (Run after Login)
+POST https://localhost:7146/api/auth/refresh
+Content-Type: application/json
+{}

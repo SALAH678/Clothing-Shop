@@ -1,11 +1,14 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.Login;
 using Application.Features.Authentications.Dtos;
+using Application.Features.Users.Dtos;
 using FastEndpoints;
 using MediatR;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
+
+public record LoginResponse(UserDto User, string AccessToken);
 
 public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
 {
@@ -29,7 +32,7 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
         });
 
         Description(x => x
-            .Produces<AuthResponse>(200)
+            .Produces<LoginResponse>(200)
             .ProducesProblemDetails(400)
             .ProducesProblemDetails(401)
             .ProducesProblemDetails(500));
@@ -39,7 +42,20 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
         var result = await _mediator.Send(req, ct);
 
         return result.Match(
-            onSuccess: value => Results.Ok(value),
+            onSuccess: value =>
+            {
+                HttpContext.Response.Cookies.Append("refreshToken", value.Tokens.RefreshToken!, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Path = "/api/auth/refresh",
+                    //Expires = new DateTimeOffset(value.Tokens.RefreshTokenExpiresAtUtc.UtcDateTime, TimeSpan.Zero)
+                    Expires = value.Tokens.RefreshTokenExpiresAtUtc
+                });
+                var response = new LoginResponse(value.User, value.Tokens.AccessToken!);
+                return Results.Ok(response);
+            },
             onError: errors => errors.ToProblem()
         );
     }

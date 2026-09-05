@@ -4,6 +4,4 @@ using MediatR;
 
 namespace Application.Features.Authentications.Command.Refresh;
 
-public sealed record RefreshCommand(
-        string email,
-        string refreshToken) : IRequest<Result<AuthResponse>>;
+public sealed record RefreshCommand(string refreshToken) : IRequest<Result<AuthResponse>>;

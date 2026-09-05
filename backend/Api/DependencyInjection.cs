@@ -64,9 +64,10 @@ public static class DependencyInjection
         {
             options.AddPolicy("clothingStoreDevCors", policy =>
             {
-                policy.AllowAnyOrigin()
+                policy.WithOrigins("https://localhost:5173")
                       .AllowAnyHeader()
-                      .AllowAnyMethod();
+                      .AllowAnyMethod()
+                      .AllowCredentials();
             });
         });
 
