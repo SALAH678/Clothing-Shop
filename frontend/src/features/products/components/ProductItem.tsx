@@ -1,4 +1,5 @@
 import { type Product } from "../types/Product";
+import { ShoppingCart } from 'lucide-react';
 
 export default function ProductItem({ product }: { product: Product }) {
   const backEndUrl: string = import.meta.env.VITE_API_URL ?? "";
@@ -26,6 +27,13 @@ export default function ProductItem({ product }: { product: Product }) {
         <h3 className="font-mono text-sm uppercase line-clamp-2 font-bold">{product.name}</h3>
         <span className="font-mono text-sm mt-2 text-secondary">{product.basePrice}</span>
       </div>
+      <button
+        onClick={() => addToCart(product)}
+        className="mt-4 w-full bg-transparent text-primary font-mono text-xs uppercase py-3 border border-primary font-bold tracking-widest transition-all duration-300 hover:bg-primary hover:text-white flex items-center justify-center gap-2 active:scale-95"
+      >
+        <ShoppingCart className="w-4 h-4" />
+        Add to Cart
+      </button>
     </article>
   );
 }
