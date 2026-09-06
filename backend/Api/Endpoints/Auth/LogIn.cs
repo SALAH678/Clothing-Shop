@@ -49,8 +49,7 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Path = "/api/auth/refresh",
-                    //Expires = new DateTimeOffset(value.Tokens.RefreshTokenExpiresAtUtc.UtcDateTime, TimeSpan.Zero)
+                    Path = "/api/auth",
                     Expires = value.Tokens.RefreshTokenExpiresAtUtc
                 });
                 var response = new LoginResponse(value.User, value.Tokens.AccessToken!);

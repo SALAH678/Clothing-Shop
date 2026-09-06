@@ -52,7 +52,7 @@ public class Refresh(IMediator mediator) : EndpointWithoutRequest<IResult>
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Path = "/api/auth/refresh",
+                    Path = "/api/auth",
                     Expires = value.Tokens.RefreshTokenExpiresAtUtc
                 });
 

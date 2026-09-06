@@ -2,7 +2,6 @@ using Application.Common.Errors;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
-using Domain.Common.ValueObjects.Email;
 using MediatR;
 
 using Microsoft.Extensions.Logging;
@@ -18,16 +17,7 @@ public class LogOutCommandHandler(IUnitOfWork unitOfWork,
 
     public async Task<Result<Success>> Handle(LogOutCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Logout attempt for Email: {Email}", request.email);
-
-        var emailResult = Email.Create(request.email);
-        var user = await _unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
-
-        if (user is null)
-        {
-            _logger.LogWarning("Logout failed: user not found for Email: {Email}", request.email);
-            return ApplicationErrors.InvalidRefreshRequest;
-        }
+        _logger.LogInformation("Logout attempt");
 
         var requestedRefreshTokenHash = _tokenHasherService.HashToken(request.refreshToken);
 
@@ -36,16 +26,16 @@ public class LogOutCommandHandler(IUnitOfWork unitOfWork,
             cancellationToken: cancellationToken);
 
         if (refreshTokenInDb is null)
-            return ApplicationErrors.RefreshTokenNotFound;
-
-        if (refreshTokenInDb.UserId != user.Id)
-            return ApplicationErrors.InvalidRefreshRequest;
+        {
+            _logger.LogInformation("Logout: refresh token not found, treating as success.");
+            return Result.Success;// Treating as success to avoid revealing token validity
+        }
 
         if (refreshTokenInDb.IsRevoked)
-            return ApplicationErrors.RefreshTokenIsRevoked;
-
-        if (refreshTokenInDb.ExpiresAtUtc <= DateTimeOffset.UtcNow)
-            return ApplicationErrors.RefreshTokenExpired;
+        {
+            _logger.LogInformation("Logout: refresh token already revoked for UserId: {UserId}", refreshTokenInDb.UserId);
+            return Result.Success;
+        }
 
         refreshTokenInDb.Revoke();
 
@@ -55,11 +45,11 @@ public class LogOutCommandHandler(IUnitOfWork unitOfWork,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Logout failed: unable to revoke refresh token for Email: {Email}, UserId: {UserId}", request.email, user.Id);
+            _logger.LogError(ex,"Logout failed: unable to revoke refresh token for UserId: {UserId}", refreshTokenInDb.UserId);
             return ApplicationErrors.LogOutFailed;
         }
 
-        _logger.LogInformation("Logout successful for Email: {Email}, UserId: {UserId}", request.email, user.Id);
+        _logger.LogInformation("Logout successful for UserId: {UserId}", refreshTokenInDb.UserId);
 
         return Result.Success;
     }
