@@ -97,4 +97,10 @@ public static class ApplicationErrors
     public static Error ProductsNotExists => Error.NotFound(
         code: "Products_Not_Exists",
         description: "products does not exist");
+    public static Error InvalidGoogleId => Error.NotFound(
+        code: "Invalid_Google_Id",
+        description: "Invalid Google ID token.");
+    public static Error OAuthFailed => Error.Failure(
+        code: "OAuth_Failed",
+        description: "OAuth authentication failed.");
 }

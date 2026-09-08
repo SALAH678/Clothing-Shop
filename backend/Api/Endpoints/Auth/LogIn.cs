@@ -1,6 +1,5 @@
 ﻿using Api.Extensions;
 using Application.Features.Authentications.Command.Login;
-using Application.Features.Authentications.Dtos;
 using Application.Features.Users.Dtos;
 using FastEndpoints;
 using MediatR;
