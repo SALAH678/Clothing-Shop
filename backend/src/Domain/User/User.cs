@@ -138,13 +138,13 @@ public class User : AuditableEntity
         if (string.IsNullOrWhiteSpace(firstName))
             return UserErrors.FirstNameRequired;
 
-        if (!Regex.IsMatch(firstName, @"^[a-zA-Z]+$"))
+        if (!Regex.IsMatch(firstName, @"^[a-zA-Z]+( [a-zA-Z]+)*$"))
             return UserErrors.InvalidFirstName;
 
         if (string.IsNullOrWhiteSpace(lastName))
             return UserErrors.LastNameRequired;
 
-        if (!Regex.IsMatch(lastName, @"^[a-zA-Z]+$"))
+        if (!Regex.IsMatch(lastName, @"^[a-zA-Z]+( [a-zA-Z]+)*$"))
             return UserErrors.InvalidLastName;
 
         if (email is null)

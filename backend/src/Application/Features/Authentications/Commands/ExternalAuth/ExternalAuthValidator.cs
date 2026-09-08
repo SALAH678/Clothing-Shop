@@ -14,8 +14,9 @@ namespace Application.Features.Authentications.Command.ExternalAuthentication
             .WithMessage("Id token is required.");
 
             RuleFor(x => x.phoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(PhoneRegex).WithMessage("Phone number must be exactly 10 digits long.");
+            .Matches(PhoneRegex)
+            .WithMessage("Phone number must be exactly 10 digits long.")
+            .When(x => !string.IsNullOrWhiteSpace(x.phoneNumber));
         }
     }
 }

@@ -4,6 +4,6 @@ using MediatR;
 
 namespace Application.Features.Authentications.Command.ExternalAuthentication;
 
-public record ExternalAuthCommand(string IdToken, string phoneNumber) : IRequest<Result<AuthResponse>>;
+public record ExternalAuthCommand(string IdToken, string? phoneNumber) : IRequest<Result<AuthResponse>>;
 
 
