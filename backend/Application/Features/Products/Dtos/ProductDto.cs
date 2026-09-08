@@ -11,5 +11,11 @@ public class ProductDto
     public decimal? Discount { get; init; }
     public Guid CategoryId { get; init; }
     public List<VariantDto> Variants { get; init; } = [];
-    public List<string> ImageUrls { get; init; } = [];
+    public List<ImageDto> Images { get; init; } = [];
+}
+
+public class ImageDto
+{
+    public string ImageUrl { get; init; } = string.Empty;
+    public bool IsMain { get; init; }
 }
