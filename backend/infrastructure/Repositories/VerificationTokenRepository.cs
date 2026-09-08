@@ -9,7 +9,9 @@ namespace infrastructure.Repositories;
 
 public sealed class VerificationTokenRepository(AppDbContext context) : Repository<VerificationToken>(context), IVerificationTokenRepository
 {
-    public async Task<VerificationToken?> GetByUserIdAsync(Guid userId, VerificationTokenType tokenType, CancellationToken cancellationToken) => 
-        await _Context.VerificationTokens
-        .FirstOrDefaultAsync(vt => vt.UserId == userId && vt.Type == tokenType, cancellationToken);
+    public async Task<VerificationToken?> GetByUserIdAsync(Guid userId, VerificationTokenType tokenType, CancellationToken cancellationToken) =>
+      await _Context.VerificationTokens
+          .Where(vt => vt.UserId == userId && vt.Type == tokenType && !vt.IsUsed)
+          .OrderByDescending(vt => vt.CreatedAtUtc)
+          .FirstOrDefaultAsync(cancellationToken);
 }
