@@ -64,7 +64,8 @@ public static class DependencyInjection
         services.AddScoped<IImageService, ImageService>();
         
         services.AddScoped<IEmailService, EmailService>();
-        //services.AddScoped<IOAuthService, OAuthService>();
+
+        services.AddScoped<IOAuthService, OAuthService>();
 
         services.AddScoped<ITokenProvider, TokenProvider>();
 

@@ -31,7 +31,7 @@ POST https://localhost:7146/api/auth/refresh
 Content-Type: application/json
 {}
 
-### 3. Refresh with Auto-Stored Cookie (Run after Login)
+### 3. Refresh with Auto-Stored Cookie
 POST https://localhost:7146/api/auth/refresh
 Content-Type: application/json
 {}
