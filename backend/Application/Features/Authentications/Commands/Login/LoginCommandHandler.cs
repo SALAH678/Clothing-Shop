@@ -92,7 +92,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,
             return ApplicationErrors.LoginFailed;
         }
 
-        var hashedToken = _tokenHasher.HashToken(finalTokens.RefreshToken!);
+        var hashedToken = _tokenHasher.HashToken(finalTokens.RefreshToken);
 
         var newRefreshToken = RefreshToken.Create(
             userId: user.Id,

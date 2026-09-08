@@ -1,7 +1,6 @@
 using Application.Common.Errors;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.BackgroundJobs;
-using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
 using Domain.Users.VerificationTokens;
