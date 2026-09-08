@@ -33,7 +33,7 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
             query = query.Where(product => product.CategoryId == categoryId.Value);
 
         if (!string.IsNullOrWhiteSpace(productFilter.Search))
-            query = query.Where(product => product.Name.ToLower().Contains(productFilter.Search.ToLower()));
+            query = query.Where(product => product.Name.ToLower().Contains(productFilter.Search.Trim().ToLower()));
 
         if (productFilter.MinPrice.HasValue)
             query = query.Where(product => product.BasePrice >= productFilter.MinPrice.Value);
@@ -66,12 +66,22 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
 
         var itemsNumber = await query.CountAsync(cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(productFilter.SortBy) && productFilter.SortBy.Equals("price", StringComparison.OrdinalIgnoreCase))
-            query = productFilter.Descending ? query.OrderByDescending(p => p.BasePrice)
-                : query.OrderBy(p => p.BasePrice);
-        else
-            query = productFilter.Descending ? query.OrderByDescending(p => p.CreatedAtUtc)
-                : query.OrderBy(p => p.CreatedAtUtc);
+        query = productFilter.SortBy?.Trim().ToLowerInvariant() switch
+        {
+            "price" => productFilter.Descending
+                ? query
+                    .OrderByDescending(product => product.BasePrice)
+                    .ThenByDescending(p => p.CreatedAtUtc)
+                : query
+                    .OrderBy(product => product.BasePrice)
+                    .ThenBy(product => product.CreatedAtUtc),
+
+            _ => productFilter.Descending
+                ? query
+                    .OrderByDescending(product => product.CreatedAtUtc)
+                : query
+                    .OrderBy(product => product.CreatedAtUtc)
+        };
 
         var products = await query
             .Include(product => product.Variants)
