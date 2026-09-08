@@ -1,41 +1,33 @@
-﻿using Application.Common.Interfaces.Services;
-using Application.Features.Authentications.Dtos;
+﻿using Application.Common.Exceptions;
+using Application.Common.Interfaces.Services;
 using Google.Apis.Auth;
+using Microsoft.Extensions.Configuration;
 
 namespace infrastructure.Services;
 
-//public class OAuthService : IOAuthService
-//{
-//    public async Task<ExternalUserInfo> AuthenticateWithGoogleAsync(string idToken, CancellationToken cancellationToken = default)
-//    {
-//        if (string.IsNullOrWhiteSpace(idToken))
-//        {
-//            throw new ArgumentException("Google ID token is required.", nameof(idToken));
-//        }
+public class OAuthService(IConfiguration configuration) : IOAuthService
+{
+    private readonly IConfiguration _config = configuration;
 
-//        if (string.IsNullOrWhiteSpace(clientId))
-//        {
-//            throw new ArgumentException("Google client ID is required.", nameof(clientId));
-//        }
+    public async Task<OAuthUserInfo> ValidateGoogleTokenAsync(string idToken, CancellationToken ct)
+    {
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { _config["Authentication:Google:ClientId"] }
+            });
 
-//        var validationSettings = new GoogleJsonWebSignature.ValidationSettings
-//        {
-//            Audience = new[] { clientId }
-//        };
-
-//        var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
-
-//        if (string.IsNullOrWhiteSpace(payload.Email))
-//        {
-//            throw new InvalidOperationException("Google token does not contain an email claim.");
-//        }
-
-//        return new ExternalUserInfo(
-//            Provider: "Google",
-//            ProviderUserId: payload.Subject ?? payload.Email,
-//            Email: payload.Email,
-//            FirstName: payload.GivenName ?? string.Empty,
-//            LastName: payload.FamilyName ?? string.Empty,
-//            EmailVerified: payload.EmailVerified ?? false);
-//    }
-//}
+            return new OAuthUserInfo(
+                payload.Email,
+                payload.EmailVerified,
+                payload.GivenName ?? string.Empty,
+                payload.FamilyName ?? string.Empty,
+                payload.Subject);
+        }
+        catch (InvalidJwtException ex)
+        {
+            throw new InvalidOAuthTokenException("Google ID token validation failed.", ex);
+        }
+    }
+}
