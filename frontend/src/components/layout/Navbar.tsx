@@ -1,7 +1,55 @@
 import { Search, ShoppingCart, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../features/auth/hooks/useAuth";
+import { useCart } from "../../features/carts/hooks/useCart";
 
 export default function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated } = useAuth();
+  const { cartCount, setIsCartOpen } = useCart();
+
+  const currentSearchParam = searchParams.get("search") ?? "";
+
+  const handleCartClick = () => {
+    if (!isAuthenticated) {
+      navigate("/auth/login", { state: { from: location } });
+      return;
+    }
+
+    setIsCartOpen(true);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const trimmed = String(formData.get("search") ?? "").trim();
+
+    // Blur active input so it collapses back to icon
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    const isCategoryPage = location.pathname.startsWith("/categories/") && location.pathname !== "/categories";
+
+    const targetPath = isCategoryPage ? location.pathname : "/categories/all";
+    const nextParams = new URLSearchParams(isCategoryPage ? location.search : "");
+
+    if (trimmed) {
+      nextParams.set("search", trimmed);
+    } else {
+      nextParams.delete("search");
+      if (targetPath === "/categories/all") {
+        navigate("/categories");
+        return;
+      }
+    }
+
+    const queryString = nextParams.toString();
+    navigate(`${targetPath}${queryString ? `?${queryString}` : ""}`);
+  };
+
   return (
     <header className="bg-surface sticky top-0 z-50 border-b border-primary flex flex-col md:flex-row justify-between items-center w-full px-4 md:px-4 lg:px-6 py-4 transition-all duration-300 gap-4 md:gap-6 lg:gap-8">
       <div className="flex items-center justify-between w-full md:w-auto shrink-0">
@@ -12,16 +60,33 @@ export default function Navbar() {
           Clothing Shop
         </Link>
         <div className="flex gap-4 md:hidden items-center">
-          <div className="group relative flex items-center justify-end h-6">
-            <Search className="w-6 h-6 cursor-pointer z-10" />
+          <form
+            key={`mobile-search-${currentSearchParam}`}
+            onSubmit={handleSearch}
+            className="group relative flex items-center justify-end h-6"
+          >
+            <button type="submit" aria-label="Search" className="z-10 focus:outline-none cursor-pointer">
+              <Search className="w-6 h-6" />
+            </button>
             <input
               type="text"
+              name="search"
               placeholder="Search..."
-              className="absolute right-0 w-0 opacity-0 group-hover:w-32 group-hover:opacity-100 focus:w-32 focus:opacity-100 transition-all duration-300 ease-out bg-surface border-b-2 border-transparent group-hover:border-primary focus:border-primary font-mono text-xs py-1 pr-8 outline-none z-0 cursor-text"
+              defaultValue={currentSearchParam}
+              className="absolute right-0 w-0 opacity-0 group-hover:w-32 group-hover:opacity-100 group-hover:border-primary focus:w-32 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-xs py-1 pr-8 outline-none z-0 cursor-text"
             />
-          </div>
-          <ShoppingCart className="w-6 h-6 hover:opacity-70 transition-opacity cursor-pointer" />
-          <User className="w-6 h-6 hover:opacity-70 transition-opacity cursor-pointer" />
+          </form>
+          <button type="button" onClick={handleCartClick} className="relative" aria-label="Open cart">
+            <ShoppingCart className="w-6 h-6 hover:opacity-70 transition-opacity cursor-pointer" />
+            {isAuthenticated && cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 bg-primary text-white text-[10px] font-mono font-bold flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          <Link to="/profile">
+            <User className="w-6 h-6 hover:scale-110 active:scale-95 transition-transform cursor-pointer" />
+          </Link>
         </div>
       </div>
       <nav className="hidden md:flex gap-2 md:gap-3 lg:gap-6 items-center flex-nowrap justify-center flex-1 min-w-0">
@@ -47,16 +112,33 @@ export default function Navbar() {
         ))}
       </nav>
       <div className="hidden md:flex gap-4 lg:gap-6 items-center shrink-0">
-        <div className="group relative flex items-center justify-end h-5 lg:h-6">
-          <Search className="w-4 h-4 lg:w-5 lg:h-5 cursor-pointer z-10 hover:scale-110 transition-transform" />
+        <form
+          key={`desktop-search-${currentSearchParam}`}
+          onSubmit={handleSearch}
+          className="group relative flex items-center justify-end h-5 lg:h-6"
+        >
+          <button type="submit" aria-label="Search" className="z-10 focus:outline-none cursor-pointer">
+            <Search className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform" />
+          </button>
           <input
             type="text"
+            name="search"
             placeholder="Search product..."
-            className="absolute right-0 w-0 opacity-0 group-hover:w-35 lg:group-hover:w-50 group-hover:opacity-100 focus:w-35 lg:focus:w-50 focus:opacity-100 transition-all duration-300 ease-out bg-surface border-b-2 border-transparent group-hover:border-primary focus:border-primary font-mono text-[10px] lg:text-xs py-1 pr-6 lg:pr-8 outline-none z-0 cursor-text"
+            defaultValue={currentSearchParam}
+            className="absolute right-0 w-0 opacity-0 group-hover:w-35 lg:group-hover:w-50 group-hover:opacity-100 group-hover:border-primary focus:w-35 lg:focus:w-50 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-[10px] lg:text-xs py-1 pr-6 lg:pr-8 outline-none z-0 cursor-text"
           />
-        </div>
-        <User className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
-        <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
+        </form>
+        <Link to="/profile">
+          <User className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
+        </Link>
+        <button type="button" onClick={handleCartClick} className="relative" aria-label="Open cart">
+          <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
+          {isAuthenticated && cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 bg-primary text-white text-[10px] font-mono font-bold flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
+        </button>
       </div>
     </header>
   );

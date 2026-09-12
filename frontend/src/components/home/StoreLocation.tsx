@@ -38,7 +38,6 @@ export default function StoreLocator() {
           </div>
 
           <div className="md:col-span-8 h-62.5 md:h-75 lg:h-112.5 border border-primary relative overflow-hidden group shadow-xl hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1 transition-all duration-300 bg-surface">
-            {/* Simulated Map */}
             <div
               className="absolute inset-0 bg-cover bg-center grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
               style={{
