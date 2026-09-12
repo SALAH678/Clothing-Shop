@@ -1,0 +1,15 @@
+﻿using Domain.Common.Results;
+using Domain.Common.ValueObjects.Address;
+using MediatR;
+
+namespace Application.Features.Purchases.CreatePurchase.Command;
+
+public record CreatePurchaseCommand(
+    string CustomerPhone,
+    Address CustomerAddress,
+    List<PurchaseLineItem> Items
+) : IRequest<Result<CreatePurchaseResult>>;
+
+public record PurchaseLineItem(Guid VariantId, int Quantity);
+
+public record CreatePurchaseResult(Guid PurchaseId, string CheckoutUrl);
