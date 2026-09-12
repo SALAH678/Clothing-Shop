@@ -1,10 +1,12 @@
+import { useNavigate, useParams } from "react-router-dom";
 import { type Product } from "../types/Product";
-import { ShoppingCart } from 'lucide-react';
 
 export default function ProductItem({ product }: { product: Product }) {
+  const navigate = useNavigate();
+  const { categoryName } = useParams<{ categoryName: string }>();
+  const productPath = `/categories/${encodeURIComponent(categoryName ?? "all")}/${product.id}`;
   const backEndUrl: string = import.meta.env.VITE_API_URL ?? "";
   const mainImage = product.images.find((image) => image.isMain);
-  console.log("ProductItem mainImage:", mainImage); // Debugging line
 
   const mainImageUrl = mainImage?.imageUrl
     ? /^https?:\/\//i.test(mainImage.imageUrl)
@@ -12,10 +14,16 @@ export default function ProductItem({ product }: { product: Product }) {
       : `${backEndUrl.replace(/\/$/, "")}/${mainImage.imageUrl.replace(/^\//, "")}`
     : undefined;
 
-  console.log("ProductItem mainImageUrl:", mainImageUrl); // Debugging line
-
   return (
-    <article className="group relative bg-surface border border-primary flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1 active:scale-95 active:shadow-md cursor-pointer">
+    <article
+      className="group relative bg-surface border border-primary flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1 active:scale-95 active:shadow-md cursor-pointer"
+      onClick={() => navigate(productPath)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") navigate(productPath);
+      }}
+      role="link"
+      tabIndex={0}
+    >
       <div className="relative aspect-[0.8] overflow-hidden border-b border-primary bg-surface-container">
         <img
           src={mainImageUrl}
@@ -27,13 +35,6 @@ export default function ProductItem({ product }: { product: Product }) {
         <h3 className="font-mono text-sm uppercase line-clamp-2 font-bold">{product.name}</h3>
         <span className="font-mono text-sm mt-2 text-secondary">{product.basePrice}</span>
       </div>
-      <button
-        onClick={() => addToCart(product)}
-        className="mt-4 w-full bg-transparent text-primary font-mono text-xs uppercase py-3 border border-primary font-bold tracking-widest transition-all duration-300 hover:bg-primary hover:text-white flex items-center justify-center gap-2 active:scale-95"
-      >
-        <ShoppingCart className="w-4 h-4" />
-        Add to Cart
-      </button>
     </article>
   );
 }

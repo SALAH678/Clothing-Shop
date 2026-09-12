@@ -27,3 +27,8 @@ export async function getProducts(params: GetProductsParams): Promise<PaginatedL
 
   return response.data;
 }
+
+export async function getProduct(productId: string): Promise<Product> {
+  const response = await apiClient.get<Product>(`/products/${productId}`);
+  return response.data;
+}

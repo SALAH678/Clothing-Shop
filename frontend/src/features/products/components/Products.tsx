@@ -10,6 +10,7 @@ export default function Products({
   sort,
   onSortChange,
   onShowMore,
+  isLoadingMore,
 }: {
   products: Product[];
   productsCount: number;
@@ -18,6 +19,7 @@ export default function Products({
   sort: string;
   onSortChange: (value: string) => void;
   onShowMore?: () => void;
+  isLoadingMore?: boolean;
 }) {
   return (
     <section className="grow flex flex-col">
@@ -38,9 +40,10 @@ export default function Products({
         <div className="flex justify-center p-6 md:p-8 bg-surface-container-lowest">
           <button
             onClick={onShowMore}
-            className="bg-primary text-on-primary font-mono text-sm uppercase py-4 px-10 border border-primary tracking-widest font-bold shadow-xl transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:bg-white hover:text-black active:translate-y-1 active:scale-95 active:shadow-md"
+            disabled={isLoadingMore}
+            className="bg-primary text-on-primary font-mono text-sm uppercase py-4 px-10 border border-primary tracking-widest font-bold shadow-xl transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:bg-white hover:text-black active:translate-y-1 active:scale-95 active:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-xl"
           >
-            Show More
+            {isLoadingMore ? "Loading..." : "Show More"}
           </button>
         </div>
       )}
