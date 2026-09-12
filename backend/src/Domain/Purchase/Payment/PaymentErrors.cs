@@ -9,4 +9,5 @@ public static class PaymentErrors
     public static Error InvalidAmount => Error.Validation(code: "Payment_Invalid_Amount", description: "Payment amount cannot be negative.");
     public static Error InvalidStatus => Error.Validation(code: "Payment_Invalid_Status", description: "Payment status is invalid.");
     public static Error TransactionIdRequired => Error.Validation(code: "Payment_Transaction_Id_Required", description: "Transaction id is required.");
+    public static  Error CheckoutAlreadyAttached => Error.Conflict("Payment.CheckoutAlreadyAttached", "A checkout has already been attached to this payment.");
 }

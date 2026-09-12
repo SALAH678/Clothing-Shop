@@ -9,7 +9,7 @@ public class Payment : AuditableEntity
     public Guid PurchaseId { get; private set; }
     public decimal Amount { get; private set; }
     public PaymentStatus Status { get; private set; }
-    public string TransactionId { get; private set; } = null!;
+    public string? TransactionId { get; private set; }
 
     public Purchase Purchase { get; private set; } = null!;
 
@@ -17,7 +17,7 @@ public class Payment : AuditableEntity
     {
     }
 
-    protected Payment(Guid purchaseId, decimal amount, PaymentStatus status, string transactionId)
+    protected Payment(Guid purchaseId, decimal amount, PaymentStatus status, string? transactionId)
         : base(Guid.Empty)
     {
         PurchaseId = purchaseId;
@@ -26,7 +26,7 @@ public class Payment : AuditableEntity
         TransactionId = transactionId;
     }
 
-    public static Result<Payment> Create(Guid purchaseId, decimal amount, PaymentStatus status, string? transactionId)
+    public static Result<Payment> Create(Guid purchaseId, decimal amount, PaymentStatus status, string? transactionId = null)
     {
         Error? error = Validate(purchaseId, amount, status, transactionId);
 
@@ -34,6 +34,19 @@ public class Payment : AuditableEntity
             return error.Value;
 
         return new Payment(purchaseId, amount, status, transactionId!.Trim());
+    }
+
+    public Result<Updated> AttachCheckout(string? checkoutId)
+    {
+        if (string.IsNullOrWhiteSpace(checkoutId))
+            return PaymentErrors.TransactionIdRequired;
+
+        if (!string.IsNullOrWhiteSpace(TransactionId))
+            return PaymentErrors.CheckoutAlreadyAttached;
+
+        TransactionId = checkoutId.Trim();
+
+        return Result.Updated;
     }
 
     public Result<Updated> UpdateStatus(PaymentStatus status)
@@ -67,7 +80,7 @@ public class Payment : AuditableEntity
         if (!System.Enum.IsDefined(status))
             return PaymentErrors.InvalidStatus;
 
-        if (string.IsNullOrWhiteSpace(transactionId))
+        if (transactionId is not null && string.IsNullOrWhiteSpace(transactionId))
             return PaymentErrors.TransactionIdRequired;
 
         return null;
