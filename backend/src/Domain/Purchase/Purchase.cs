@@ -35,17 +35,17 @@ public class Purchase : AuditableEntity
         TotalAmount = 0;
     }
 
-    public static Result<Purchase> Create(Guid userId, PhoneNumber? customerPhone, Address? customerAddress)
+    public static Result<Purchase> Create(Guid userId, PhoneNumber customerPhone, Address customerAddress)
     {
         Error? error = Validate(userId, customerPhone, customerAddress);
 
         if (error is not null)
             return error.Value;
 
-        return new Purchase(userId, customerPhone!, customerAddress!);
+        return new Purchase(userId, customerPhone, customerAddress);
     }
 
-    public Result<Updated> UpdateCustomerInfo(PhoneNumber? customerPhone, Address? customerAddress)
+    public Result<Updated> UpdateCustomerInfo(PhoneNumber customerPhone, Address customerAddress)
     {
         Error? error = Validate(UserId, customerPhone, customerAddress);
 
@@ -141,7 +141,7 @@ public class Purchase : AuditableEntity
         TotalAmount = _items.Sum(item => item.Quantity * item.UnitPrice);
     }
 
-    private static Error? Validate(Guid userId, PhoneNumber? customerPhone, Address? customerAddress)
+    private static Error? Validate(Guid userId, PhoneNumber customerPhone, Address customerAddress)
     {
         if (userId == Guid.Empty)
             return PurchaseErrors.UserIdRequired;
