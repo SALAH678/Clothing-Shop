@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AuthContext } from "./authContext";
 import type { LoginResponse, User } from "../types/LoginResponse";
 import { setAccessToken as setApiAccessToken, setupAuthCallbacks } from "../../../lib/apiClient";
@@ -8,6 +8,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const authInitializationStarted = useRef(false);
 
   const setToken = useCallback((token: string | null | undefined) => {
     setAccessTokenState(token);
@@ -43,12 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // When interceptor fails refresh or token is expired, set to null
         setAccessTokenState(null);
         setUser(null);
-      }
+      },
     );
   }, []);
 
   // Silent refresh on initial app load to restore session if refreshToken cookie exists
   useEffect(() => {
+    if (authInitializationStarted.current) return;
+    authInitializationStarted.current = true;
+
     const initializeAuth = async () => {
       try {
         const data = await authApi.refresh();

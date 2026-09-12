@@ -3,6 +3,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface GoogleRegisterRequest {
+  phoneNumber: string | null;
+  IdToken: string;
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;

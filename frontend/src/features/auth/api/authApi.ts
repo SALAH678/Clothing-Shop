@@ -1,6 +1,12 @@
 import { apiClient } from "../../../lib/apiClient";
 import type { LoginResponse } from "../types/LoginResponse";
-import type { LoginRequest, RegisterRequest, VerifyEmailRequest, ResendCodeRequest } from "../types/Requests";
+import type {
+  GoogleRegisterRequest,
+  LoginRequest,
+  RegisterRequest,
+  VerifyEmailRequest,
+  ResendCodeRequest,
+} from "../types/Requests";
 
 export async function register(data: RegisterRequest): Promise<string> {
   const response = await apiClient.post("/auth/register", data);
@@ -14,6 +20,11 @@ export async function verifyEmail(data: VerifyEmailRequest): Promise<void> {
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const response = await apiClient.post("/auth/login", data);
+  return response.data;
+}
+
+export async function registerWithGoogle(data: GoogleRegisterRequest): Promise<LoginResponse> {
+  const response = await apiClient.post("/auth/google", data);
   return response.data;
 }
 

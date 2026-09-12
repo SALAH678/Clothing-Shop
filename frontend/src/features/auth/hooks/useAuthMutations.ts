@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as authApi from "../api/authApi";
 import { useAuth } from "./useAuth";
 import type {
+  GoogleRegisterRequest,
   LoginRequest,
   RegisterRequest,
   VerifyEmailRequest,
@@ -16,7 +17,20 @@ export function useLogin() {
     mutationFn: (data: LoginRequest) => authApi.login(data),
     onSuccess: (data) => {
       login(data);
-      queryClient.clear();
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "categories" });
+    },
+  });
+}
+
+export function useGoogleRegister() {
+  const { login } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: GoogleRegisterRequest) => authApi.registerWithGoogle(data),
+    onSuccess: (data) => {
+      login(data);
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "categories" });
     },
   });
 }
@@ -47,15 +61,8 @@ export function useForgotPassword() {
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: ({
-      email,
-      code,
-      newPassword,
-    }: {
-      email: string;
-      code: string;
-      newPassword: string;
-    }) => authApi.resetPassword(email, code, newPassword),
+    mutationFn: ({ email, code, newPassword }: { email: string; code: string; newPassword: string }) =>
+      authApi.resetPassword(email, code, newPassword),
   });
 }
 
@@ -66,7 +73,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => logout(),
     onSuccess: () => {
-      queryClient.clear();
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "categories" });
     },
   });
 }
