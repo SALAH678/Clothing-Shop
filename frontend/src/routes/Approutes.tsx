@@ -9,6 +9,7 @@ import ForgotPassword from "../pages/ForgotPassword";
 import ProtectedRoute from "../features/auth/components/ProtoctedRoute";
 import Profile from "../pages/Profile";
 import VerifyEmail from "../pages/VerifyEmail";
+import ProductDetails from "../pages/ProductDetails";
 
 export default function Approutes() {
   return (
@@ -20,6 +21,7 @@ export default function Approutes() {
           <Route path="/categories">
             <Route index element={<CategoriesOverview />} />
             <Route path=":categoryName" element={<CategoryProducts />} />
+            <Route path=":categoryName/:id" element={<ProductDetails />} />
           </Route>
 
           <Route path="/auth">
