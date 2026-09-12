@@ -31,8 +31,9 @@ public class PaymentConfiguration : AuditableEntityConfiguration<Payment>
             .HasDefaultValue(PaymentStatus.Pending);
 
         builder.Property(payment => payment.TransactionId)
-            .IsRequired()
-            .HasMaxLength(255);
+            .IsRequired(false)
+            .HasMaxLength(255)
+            .HasDefaultValue(null);
 
         builder.HasIndex(payment => payment.TransactionId)
             .IsUnique();
