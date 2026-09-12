@@ -69,6 +69,7 @@ export default function CategoryProducts() {
     data: products,
     isPending,
     isError,
+    isFetching,
     refetch,
   } = useProducts(
     {
@@ -87,7 +88,9 @@ export default function CategoryProducts() {
   );
 
   const [accumulatedProducts, setAccumulatedProducts] = useState<Product[]>([]);
+
   const productsKey = [categorySlug, search, sort, sizes, colors, minPrice, maxPrice].join("|");
+  const [previousProductsKey, setPreviousProductsKey] = useState(productsKey);
 
   useEffect(() => {
     if (!products?.items) return;
@@ -95,18 +98,15 @@ export default function CategoryProducts() {
     startTransition(() => {
       setAccumulatedProducts((previousProducts) => {
         const currentItems = products.items ?? [];
-        if (products.pageNumber <= 1) return currentItems;
+        if (productsKey !== previousProductsKey || products.pageNumber <= 1) return currentItems;
 
         const seen = new Set(previousProducts.map((product) => product.id));
         const fresh = currentItems.filter((product) => !seen.has(product.id));
         return [...previousProducts, ...fresh];
       });
+      setPreviousProductsKey(productsKey);
     });
-  }, [products]);
-
-  useEffect(() => {
-    startTransition(() => setAccumulatedProducts([]));
-  }, [productsKey]);
+  }, [products, productsKey, previousProductsKey]);
 
   if (categoriesPending && !isAllProducts) return <ProductsSkeleton />;
 
@@ -122,18 +122,9 @@ export default function CategoryProducts() {
   if (!isAllProducts && !categoryId)
     return <EmptyState title="Collection not found" message="The requested collection does not exist." />;
 
-  if (isPending) return <ProductsSkeleton />;
-
-  if (isError)
-    return (
-      <ErrorState
-        label="Error 503 / Products unavailable"
-        message="We could not load the latest products. Please try again in a moment."
-        onRetry={refetch}
-      />
-    );
-
+  const showSkeleton = isPending && accumulatedProducts.length === 0;
   const displayedProducts = accumulatedProducts.length > 0 ? accumulatedProducts : (products?.items ?? []);
+  const totalPages = products?.totalPages ?? 1;
   const filteredProductsCount = products?.totalCount ?? displayedProducts.length;
 
   return (
@@ -148,19 +139,32 @@ export default function CategoryProducts() {
         }}
         onApply={updateFilters}
       />
-      <Products
-        products={displayedProducts}
-        productsCount={filteredProductsCount}
-        currentPage={pageNumber}
-        totalPages={products?.totalPages ?? 1}
-        sort={sort}
-        onSortChange={onSortChange}
-        onShowMore={() => {
-          const next = new URLSearchParams(searchParams);
-          next.set("page", String(pageNumber + 1));
-          setSearchParams(next);
-        }}
-      />
+      {showSkeleton ? (
+        <ProductsSkeleton />
+      ) : isError ? (
+        <div className="grow flex items-center justify-center">
+          <ErrorState
+            label="Error 503 / Products unavailable"
+            message="We could not load the latest products. Please try again in a moment."
+            onRetry={refetch}
+          />
+        </div>
+      ) : (
+        <Products
+          products={displayedProducts}
+          productsCount={filteredProductsCount}
+          currentPage={pageNumber}
+          totalPages={totalPages}
+          sort={sort}
+          onSortChange={onSortChange}
+          onShowMore={() => {
+            const next = new URLSearchParams(searchParams);
+            next.set("page", String(pageNumber + 1));
+            setSearchParams(next);
+          }}
+          isLoadingMore={isFetching}
+        />
+      )}
     </div>
   );
 }

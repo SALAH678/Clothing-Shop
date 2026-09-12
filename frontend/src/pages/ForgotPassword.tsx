@@ -264,6 +264,9 @@ export default function ForgotPassword() {
                     </button>
                   )}
                 </div>
+                <p className="font-mono text-[10px] sm:text-xs text-secondary font-bold uppercase mt-2 text-center">
+                  Note: If you didn't find the code, check your spam section.
+                </p>
 
                 <div className="space-y-2">
                   <label className="font-mono text-sm font-bold uppercase block" htmlFor="new-password">

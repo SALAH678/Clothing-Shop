@@ -178,6 +178,9 @@ export default function VerifyEmail() {
                   </button>
                 )}
               </div>
+              <p className="font-mono text-[10px] sm:text-xs text-secondary font-bold uppercase mt-2 text-center">
+                Note: If you didn't find the code, check your spam section.
+              </p>
             </div>
 
             <div className="pt-4 space-y-4 flex flex-col items-center">
