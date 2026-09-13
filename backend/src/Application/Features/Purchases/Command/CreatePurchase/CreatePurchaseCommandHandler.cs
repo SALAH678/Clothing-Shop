@@ -10,15 +10,13 @@ using Domain.Purchases.Payments.Enum;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Features.Purchases.CreatePurchase.Command;
+namespace Application.Features.Purchases.Command.CreatePurchase;
 
-public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantRepository variantRepository, ICartRepository cartRepository,
-    IPaymentGatewayService paymentGateway, ILogger<CreatePurchaseCommandHandler> logger, IUser user)
-    : IRequestHandler<CreatePurchaseCommand, Result<CreatePurchaseResult>>
+public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantRepository variantRepository, IPaymentGatewayService paymentGateway,
+    ILogger<CreatePurchaseCommandHandler> logger, IUser user) : IRequestHandler<CreatePurchaseCommand, Result<CreatePurchaseResult>>
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVariantRepository _variantRepository = variantRepository;
-    private readonly ICartRepository _cartRepository = cartRepository;
     private readonly IPaymentGatewayService _paymentGateway = paymentGateway;
     private readonly ILogger<CreatePurchaseCommandHandler> _logger = logger;
     private readonly IUser _user = user;
@@ -66,8 +64,13 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
 
         // 2. Create Purchase + PurchaseItems + Payment, commit locally first
         var phoneNumberResult = PhoneNumber.Create(request.CustomerPhone);
+        if (phoneNumberResult.IsError)
+        {
+            _logger.LogWarning( "Invalid phone number for user {UserId}: {Error}", _user.UserId, phoneNumberResult.TopError.Description);
+            return phoneNumberResult.TopError;
+        }
+
         var purchase = Purchase.Create(_user.UserId, phoneNumberResult.Value, request.CustomerAddress);
-        var payment = Payment.Create(purchase.Value.Id, purchase.Value.TotalAmount, PaymentStatus.Pending);
 
         foreach(var item in enrichedItems)
         {
@@ -80,8 +83,22 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
             }
         }
 
+        var payment = Payment.Create(purchase.Value.Id, purchase.Value.TotalAmount, PaymentStatus.Pending);
+
         _unitOfWork.Purchases.Create(purchase.Value);
         _unitOfWork.Payments.Create(payment.Value);
+
+        // 3. Decrease stock for each variant
+        foreach (var item in purchase.Value.Items)
+        {
+            var decrementResult = item.Variant.DecreaseStock(item.Quantity);
+            if (decrementResult.IsError)
+            {
+                _logger.LogError("Failed to decrement stock for variant {VariantId} by {Quantity} on purchase {PurchaseId}: {Error}", item.VariantId,
+                    item.Quantity, purchase.Value.Id, decrementResult.TopError.Description);
+                return decrementResult.TopError;
+            }
+        }
 
         try
         {
@@ -99,11 +116,11 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
         _logger.LogInformation("Created Purchase {PurchaseId} and Payment {PaymentId} for user {UserId}, total {TotalAmount}",
             purchase.Value.Id, payment.Value.Id, _user.UserId, purchase.Value.TotalAmount);
 
-        // 3. Call Chargily
+        // 4. Call Chargily
         CheckoutResult checkout;
         try
         {
-            checkout = await _paymentGateway.CreateCheckoutAsync(purchase.Value.Id, purchase.Value.TotalAmount);
+            checkout = await _paymentGateway.CreateCheckout(purchase.Value.Id, purchase.Value.TotalAmount);
         }
         catch (PaymentGatewayException ex)
         {
@@ -116,12 +133,12 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
 
         _logger.LogInformation("Chargily checkout {CheckoutId} created for purchase {PurchaseId}", checkout.CheckoutId, purchase.Value.Id);
 
-        // 4. Attach the checkout id
+        // 5. Attach the checkout id
         var attachResult = payment.Value.AttachCheckout(checkout.CheckoutId);
         if (attachResult.IsError)
         {
             _logger.LogError("Failed to attach checkout {CheckoutId} to payment {PaymentId} for user {UserId}: {Error}",
-                checkout.CheckoutId, payment.Value.Id, _user.UserId, attachResult.IsError);
+                checkout.CheckoutId, payment.Value.Id, _user.UserId, attachResult.TopError.Description);
             return Error.Failure(
                 code: "Checkout_Attach_Failed",
                 description: "Could not attach checkout to payment. Please try again.");

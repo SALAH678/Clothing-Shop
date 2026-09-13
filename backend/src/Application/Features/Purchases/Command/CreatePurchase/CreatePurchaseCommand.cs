@@ -2,7 +2,7 @@
 using Domain.Common.ValueObjects.Address;
 using MediatR;
 
-namespace Application.Features.Purchases.CreatePurchase.Command;
+namespace Application.Features.Purchases.Command.CreatePurchase;
 
 public record CreatePurchaseCommand(
     string CustomerPhone,

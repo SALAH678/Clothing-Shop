@@ -15,7 +15,7 @@ public sealed class ChargilyPaymentGatewayService(IChargilyPayClient client, IOp
     private readonly ChargilyOptions _options = options.Value;
     private readonly ILogger<ChargilyPaymentGatewayService> _logger = logger;
 
-    public async Task<CheckoutResult> CreateCheckoutAsync(Guid purchaseId, decimal amount)
+    public async Task<CheckoutResult> CreateCheckout(Guid purchaseId, decimal amount)
     {
         _logger.LogInformation("Requesting Chargily checkout for purchase {PurchaseId}, amount {Amount}, live mode {IsLiveMode}", purchaseId, amount,
             _options.IsLiveMode);
@@ -48,7 +48,7 @@ public sealed class ChargilyPaymentGatewayService(IChargilyPayClient client, IOp
         return new CheckoutResult(result.Value.Id, result.Value.CheckoutUrl!);
     }
 
-    public async Task<CheckoutStatus> GetCheckoutStatusAsync(string checkoutId)
+    public async Task<CheckoutStatus> GetCheckoutStatus(string checkoutId)
     {
         _logger.LogInformation("Fetching Chargily checkout status for {CheckoutId}", checkoutId);
 

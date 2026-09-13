@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Application.Features.Purchases.CreatePurchase.Command;
+namespace Application.Features.Purchases.Command.CreatePurchase;
 
 public class CreatePurchaseCommandValidator : AbstractValidator<CreatePurchaseCommand>
 {
