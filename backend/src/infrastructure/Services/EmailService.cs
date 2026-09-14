@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using Application.Common.Interfaces.BackgroundJobs;
 using Application.Common.Interfaces.Services;
 using FluentEmail.Core;
 using FluentEmail.Smtp;
@@ -32,6 +33,9 @@ public sealed class EmailService(ILogger<EmailService> logger, IOptions<EmailOpt
 
     private readonly string _fromName = options.Value.FromName ?? "Clothing Store";
 
+    private readonly string _emailAdmin = options.Value.EmailAdmin
+        ?? throw new InvalidOperationException("Email:EmailAdmin is not configured.");
+
     public async Task SendVerificationCodeAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
@@ -49,6 +53,50 @@ public sealed class EmailService(ILogger<EmailService> logger, IOptions<EmailOpt
             """;
 
         await SendAsync(email, "Verify your email", body, cancellationToken);
+    }
+
+    public async Task SendPurchaseNotificationAsync(Guid purchaseId, string fullName, string phoneNumber, List<PurchaseNotificationItemPayload> items,
+        decimal totalAmount, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fullName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(phoneNumber);
+        ArgumentNullException.ThrowIfNull(items);
+        var itemsHtml = string.Join("", items.Select(item => $"""
+            <tr>
+                <td>{item.ProductName}</td>
+                <td>{item.Size}</td>
+                <td>{item.Color}</td>
+                <td>{item.Price:N2} DZ</td>
+                <td>{item.Quantity}</td>
+            </tr>
+        """));
+        var body = $"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Purchase Notification</h2>
+                <p>Thank you for your purchase! Here are the details:</p>
+                <p><strong>Purchase ID:</strong> {purchaseId}</p>
+                <p><strong>Customer Name:</strong> {fullName}</p>
+                <p><strong>Customer Phone Number:</strong> {phoneNumber}</p>
+                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Size</th>
+                            <th>Color</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {itemsHtml}
+                    </tbody>
+                </table>
+                <p><strong>Total Amount:</strong> {totalAmount:C}</p>
+            </body>
+            </html>
+            """;
+        await SendAsync(_emailAdmin, "Your Purchase Details", body, cancellationToken);
     }
 
     public async Task SendPasswordResetCodeAsync(string email, string code, CancellationToken cancellationToken = default)

@@ -26,4 +26,6 @@ public sealed class EmailOptions
 
     [Required(ErrorMessage = "From name is required.")]
     public string FromName { get; init; } = string.Empty;
+    [Required(ErrorMessage ="Email of Admin is required")]
+    public string EmailAdmin { get; init; } = string.Empty;
 }
