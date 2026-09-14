@@ -9,9 +9,11 @@ public interface IEmailJob
         CancellationToken cancellationToken = default);
 }
 
-public record PurchaseNotificationItemPayload(
-    string ProductName,
-    string Size,
-    string Color,
-    decimal Price,
-    int Quantity);
+public class PurchaseNotificationItemPayload
+{
+    public string ProductName { get; set; } = default!;
+    public string Size { get; set; } = default!;
+    public string Color { get; set; } = default!;
+    public decimal Price { get; set; }
+    public int Quantity { get; set; }
+}
