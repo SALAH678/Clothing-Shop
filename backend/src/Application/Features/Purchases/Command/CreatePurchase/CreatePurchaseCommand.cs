@@ -6,6 +6,7 @@ namespace Application.Features.Purchases.Command.CreatePurchase;
 
 public record CreatePurchaseCommand(
     string CustomerPhone,
+    string Origin,
     Address CustomerAddress,
     List<PurchaseLineItem> Items
 ) : IRequest<Result<CreatePurchaseResult>>;

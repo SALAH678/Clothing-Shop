@@ -3,7 +3,7 @@ using Application.Features.Purchases.Command.CreatePurchase;
 using Domain.Common.ValueObjects.Address;
 using FastEndpoints;
 using MediatR;
-using IResult = Microsoft.AspNetCore.Http.IResult;
+//using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Purchase;
 
@@ -35,6 +35,7 @@ public class CreatePurchase(IMediator mediator) : Endpoint<CreatePurchaseRequest
                 Street = "12 Rue Didouche Mourad",
                 City = "Algiers",
                 Wilaya = "Algiers",
+                Origin = "BuyNow | Cart",
                 PurchaseItems = new List<PurchaseItem>
         {
             new()
@@ -80,7 +81,7 @@ public class CreatePurchase(IMediator mediator) : Endpoint<CreatePurchaseRequest
                  x.Quantity))
             .ToList();
 
-        var command = new CreatePurchaseCommand(req.CustomerPhone, customerAddress.Value, items);
+        var command = new CreatePurchaseCommand(req.CustomerPhone, req.Origin, customerAddress.Value, items);
 
         var result = await _mediator.Send(command, ct);
 
@@ -97,6 +98,7 @@ public sealed class CreatePurchaseRequest
     public string Street { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string Wilaya { get; set; } = string.Empty;
+    public string Origin { get; set; } = string.Empty;
     public List<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
 }
 

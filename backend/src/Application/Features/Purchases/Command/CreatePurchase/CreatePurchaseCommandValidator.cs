@@ -11,6 +11,12 @@ public class CreatePurchaseCommandValidator : AbstractValidator<CreatePurchaseCo
             .Matches(@"^0[5-7][0-9]{8}$")
             .WithMessage("Phone number must be a valid Algerian mobile number.");
 
+        RuleFor(x => x.Origin)
+            .NotEmpty()
+            .WithMessage("Origin Required.")
+            .Must(x => x == "BuyNow" || x == "Cart")
+            .WithMessage("Origin must be either 'BuyNow' or 'Cart'.");
+
         RuleFor(x => x.CustomerAddress)
             .NotNull()
             .WithMessage("Customer address is required.");

@@ -5,6 +5,7 @@ using Application.Common.Interfaces.Services;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.PhoneNumber;
 using Domain.Purchases;
+using Domain.Purchases.Enum;
 using Domain.Purchases.Payments;
 using Domain.Purchases.Payments.Enum;
 using MediatR;
@@ -70,7 +71,9 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
             return phoneNumberResult.TopError;
         }
 
-        var purchase = Purchase.Create(_user.UserId, phoneNumberResult.Value, request.CustomerAddress);
+        var origin = Enum.TryParse<PurchaseOrigin>(request.Origin, out var parsedOrigin) ? parsedOrigin : PurchaseOrigin.BuyNow;
+
+        var purchase = Purchase.Create(_user.UserId, phoneNumberResult.Value, request.CustomerAddress, origin);
 
         foreach(var item in enrichedItems)
         {
