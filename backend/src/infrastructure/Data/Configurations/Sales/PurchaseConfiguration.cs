@@ -1,4 +1,5 @@
 using Domain.Common.ValueObjects.PhoneNumber;
+using Domain.Purchases.Enum;
 using Domain.Purchases;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,6 +27,11 @@ public class PurchaseConfiguration : AuditableEntityConfiguration<Purchase>
                CustomerPhone => CustomerPhone.Value,
                value => PhoneNumber.Create(value).Value)
             .HasMaxLength(15);
+
+        builder.Property(Purchase => Purchase.Origin)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(20);
 
         builder.OwnsOne(purchase => purchase.CustomerAddress, address =>
         {

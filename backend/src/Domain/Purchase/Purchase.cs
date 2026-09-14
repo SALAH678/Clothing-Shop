@@ -2,6 +2,7 @@ using Domain.Common;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.Address;
 using Domain.Common.ValueObjects.PhoneNumber;
+using Domain.Purchases.Enum;
 using Domain.Purchases.Payments;
 using Domain.Purchases.Payments.Enum;
 using Domain.Purchases.PurchaseItems;
@@ -15,6 +16,7 @@ public class Purchase : AuditableEntity
     public PhoneNumber CustomerPhone { get; private set; } = null!;
     public Address CustomerAddress { get; private set; } = null!;
     public decimal TotalAmount { get; private set; }
+    public PurchaseOrigin Origin { get; private set; }
 
     private readonly List<PurchaseItem> _items = [];
 
@@ -26,23 +28,24 @@ public class Purchase : AuditableEntity
     {
     }
 
-    protected Purchase(Guid userId, PhoneNumber customerPhone, Address customerAddress)
+    protected Purchase(Guid userId, PhoneNumber customerPhone, Address customerAddress, PurchaseOrigin origin)
         : base(Guid.Empty)
     {
         UserId = userId;
         CustomerPhone = customerPhone;
         CustomerAddress = customerAddress;
         TotalAmount = 0;
+        Origin = origin;
     }
 
-    public static Result<Purchase> Create(Guid userId, PhoneNumber customerPhone, Address customerAddress)
+    public static Result<Purchase> Create(Guid userId, PhoneNumber customerPhone, Address customerAddress, PurchaseOrigin origin)
     {
         Error? error = Validate(userId, customerPhone, customerAddress);
 
         if (error is not null)
             return error.Value;
 
-        return new Purchase(userId, customerPhone, customerAddress);
+        return new Purchase(userId, customerPhone, customerAddress, origin);
     }
 
     public Result<Updated> UpdateCustomerInfo(PhoneNumber customerPhone, Address customerAddress)
