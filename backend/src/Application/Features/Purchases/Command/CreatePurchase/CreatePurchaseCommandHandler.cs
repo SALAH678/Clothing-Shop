@@ -71,7 +71,12 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
             return phoneNumberResult.TopError;
         }
 
-        var origin = Enum.TryParse<PurchaseOrigin>(request.Origin, out var parsedOrigin) ? parsedOrigin : PurchaseOrigin.BuyNow;
+        if (!Enum.TryParse<PurchaseOrigin>(request.Origin, true, out var origin))
+        {
+            return Error.Validation(
+                code: "INVALID_PURCHASE_ORIGIN",
+                description: "Invalid purchase origin.");
+        }
 
         var purchase = Purchase.Create(_user.UserId, phoneNumberResult.Value, request.CustomerAddress, origin);
 
@@ -103,18 +108,7 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
             }
         }
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save purchase {PurchaseId} and payment {PaymentId} for user {UserId}",
-                purchase.Value.Id, payment.Value.Id, _user.UserId);
-            return Error.Failure(
-                code: "PURCHASE_SAVE_FAILED",
-                description: "Failed to save purchase. Please try again.");
-        }
+        await _unitOfWork.SaveChangesAsync(ct);
 
         _logger.LogInformation("Created Purchase {PurchaseId} and Payment {PaymentId} for user {UserId}, total {TotalAmount}",
             purchase.Value.Id, payment.Value.Id, _user.UserId, purchase.Value.TotalAmount);
@@ -127,10 +121,35 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
         }
         catch (PaymentGatewayException ex)
         {
-            _logger.LogWarning(ex, "Checkout creation failed for purchase {PurchaseId}, user {UserId}. Purchase left as PendingPayment for retry.",
+            _logger.LogWarning(ex, "Checkout creation failed for purchase {PurchaseId}, user {UserId}. Marking payment as failed and restoring stock.",
                 purchase.Value.Id, _user.UserId);
+
+            var paymentUpdateResult = payment.Value.UpdateStatus(PaymentStatus.Failed);
+
+            if (paymentUpdateResult.IsError)
+            {
+                _logger.LogError("Failed to mark payment {PaymentId} as Failed: {Error}", payment.Value.Id, paymentUpdateResult.TopError.Description);
+
+                return paymentUpdateResult.TopError;
+            }
+
+            foreach (var item in purchase.Value.Items)
+            {
+                var restoreResult = item.Variant.IncreaseStock(item.Quantity);
+
+                if (restoreResult.IsError)
+                {
+                    _logger.LogError("Failed to restore stock for variant {VariantId} by {Quantity} on purchase {PurchaseId}: {Error}",
+                        item.VariantId, item.Quantity, purchase.Value.Id, restoreResult.TopError.Description);
+
+                    return restoreResult.TopError;
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
             return Error.Failure(
-                code: "Checkout_Failed",
+                code: "CHECKOUT_FAILED",
                 description: "Could not initiate payment. Please try again.");
         }
 
@@ -147,18 +166,7 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
                 description: "Could not attach checkout to payment. Please try again.");
         }
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save checkout {CheckoutId} for payment {PaymentId} and purchase {PurchaseId} for user {UserId}",
-                checkout.CheckoutId, payment.Value.Id, purchase.Value.Id, _user.UserId);
-            return Error.Failure(
-                code: "Checkout_Save_Failed",
-                description: "Failed to save checkout. Please try again.");
-        }
+        await _unitOfWork.SaveChangesAsync(ct);
 
         _logger.LogInformation("Purchase {PurchaseId} creation completed successfully for user {UserId}",
             purchase.Value.Id, _user.UserId);
