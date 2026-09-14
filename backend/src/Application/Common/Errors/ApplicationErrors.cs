@@ -103,4 +103,10 @@ public static class ApplicationErrors
     public static Error OAuthFailed => Error.Failure(
         code: "OAuth_Failed",
         description: "OAuth authentication failed.");
+    public static Error PaymentNotFound => Error.NotFound(
+        code: "Payment_Not_Found",
+        description: "The payment was not found.");
+    public static Error DatabaseSaveFailed => Error.Failure(
+        code: "Database_Save_Failed",
+        description: "Failed to save changes to the database.");
 }

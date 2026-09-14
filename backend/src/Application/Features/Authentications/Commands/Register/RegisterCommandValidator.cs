@@ -12,8 +12,6 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
     );
 
-    private static readonly Regex PhoneRegex = new(@"^\d{10}$", RegexOptions.Compiled);
-
     public RegisterCommandValidator()
     {
         RuleFor(x => x.FirstName)
@@ -33,8 +31,9 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .Matches(PasswordRegex).WithMessage("Password must be at least 6 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
 
         RuleFor(x => x.PhoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(PhoneRegex).WithMessage("Phone number must be exactly 10 digits long.");
+            .NotEmpty()
+            .Matches(@"^0[5-7][0-9]{8}$")
+            .WithMessage("Phone number must be a valid Algerian mobile number.");
 
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is required.")

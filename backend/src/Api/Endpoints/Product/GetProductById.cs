@@ -15,7 +15,7 @@ public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, 
     {
         Get("/{productId:guid}");
         Group<ProductGroup>();
-        Roles("Admin", "Customer");
+        AllowAnonymous();
 
         Summary(s =>
         {
