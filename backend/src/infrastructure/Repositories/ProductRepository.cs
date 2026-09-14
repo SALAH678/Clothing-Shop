@@ -12,10 +12,10 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
 {
     public async Task<IReadOnlyList<Product>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default) =>
         await _Context.Products
+            .AsNoTracking()
             .Include(product => product.Variants)
             .Include(product => product.Images)
             .Where(product => product.CategoryId == categoryId)
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
     public override async ValueTask<Product?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
