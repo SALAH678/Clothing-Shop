@@ -1,3 +1,4 @@
+using Chargily.Pay.AspNet;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HealthChecks.UI.Client;
@@ -41,6 +42,8 @@ app.UseTickerQ();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseChargilyPayWebhookValidation();
 
 app.UseFastEndpoints();
 

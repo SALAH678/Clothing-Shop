@@ -1,6 +1,8 @@
-﻿using Api.Services;
+﻿using Api.Endpoints.Purchase;
+using Api.Services;
 using Application.Common.Interfaces;
 using Asp.Versioning;
+using Chargily.Pay.AspNet;
 using FastEndpoints;
 using FastEndpoints.AspVersioning;
 using FastEndpoints.Swagger;
@@ -15,6 +17,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IUser, CurrentUser>();
         services.AddTickerQ();
+        services.AddChargilyPayWebhookValidationMiddleware();
         services.AddFastEndpoints();
 
         services.AddVersioning(options =>
