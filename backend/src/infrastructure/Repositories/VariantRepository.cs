@@ -18,6 +18,5 @@ public sealed class VariantRepository(AppDbContext context) : Repository<Variant
         await _Context.Variants
             .Include(v => v.Product)
             .Where(v => ids.Contains(v.Id))
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
 }
