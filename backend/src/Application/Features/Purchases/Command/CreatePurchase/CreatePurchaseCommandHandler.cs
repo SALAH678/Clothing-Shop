@@ -89,6 +89,9 @@ public class CreatePurchaseCommandHandler(IUnitOfWork unitOfWork, IVariantReposi
                     item.VariantId, purchase.Value.Id, _user.UserId, addItemResult.TopError.Description);
                 return addItemResult.TopError;
             }
+
+            var variant = variants.First(v => v.Id == item.VariantId);
+            addItemResult.Value.AttachVariant(variant); // Attach the variant to the purchase item for stock decrement later
         }
 
         var payment = Payment.Create(purchase.Value.Id, purchase.Value.TotalAmount, PaymentStatus.Pending);
