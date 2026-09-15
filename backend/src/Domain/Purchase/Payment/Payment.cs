@@ -33,16 +33,13 @@ public class Payment : AuditableEntity
         if (error is not null)
             return error.Value;
 
-        return new Payment(purchaseId, amount, status, transactionId!.Trim());
+        return new Payment(purchaseId, amount, status, transactionId?.Trim());
     }
 
     public Result<Updated> AttachCheckout(string? checkoutId)
     {
         if (string.IsNullOrWhiteSpace(checkoutId))
             return PaymentErrors.TransactionIdRequired;
-
-        if (!string.IsNullOrWhiteSpace(TransactionId))
-            return PaymentErrors.CheckoutAlreadyAttached;
 
         TransactionId = checkoutId.Trim();
 

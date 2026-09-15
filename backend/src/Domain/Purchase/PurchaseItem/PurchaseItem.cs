@@ -37,6 +37,11 @@ public class PurchaseItem : AuditableEntity
         return new PurchaseItem(purchaseId, variantId, quantity, unitPrice);
     }
 
+    public void AttachVariant(Variant variant)
+    {
+        Variant = variant;
+    }
+
     public Result<Updated> UpdateQuantity(int quantity)
     {
         if (quantity <= 0)
