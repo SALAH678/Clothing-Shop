@@ -3,7 +3,6 @@ using Api.Extensions;
 using Application.Features.Purchases.Command.RetryPurchase;
 using FastEndpoints;
 using MediatR;
-//using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Purchase;
 
@@ -12,7 +11,7 @@ public class RetryPurchase(IMediator mediator) : Endpoint<RetryPurchaseCommand, 
     private readonly IMediator _mediator = mediator;
     public override void Configure()
     {
-        Post("retry");
+        Post("retry/{purchaseId:guid}");
         Group<PurchaseGroup>();
         Roles("Admin", "Customer");
 
@@ -26,10 +25,6 @@ public class RetryPurchase(IMediator mediator) : Endpoint<RetryPurchaseCommand, 
                 "The application checks stock availability, reserves the required stock, creates a new payment checkout, " +
                 "and returns the new checkout URL. \n" +
                 "The existing purchase and payment are reused; a new purchase is not created.";
-
-            s.ExampleRequest = new RetryPurchaseCommand(
-                Guid.Parse("11111111-1111-1111-1111-111111111111")
-            );
 
             s.Responses[200] = "Payment retry initiated successfully.";
             s.Responses[400] = "Invalid request.";
