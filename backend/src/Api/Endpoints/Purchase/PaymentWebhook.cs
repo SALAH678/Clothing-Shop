@@ -7,7 +7,22 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Purchase;
 
-public class PaymentWebhook(IMediator mediator) : Endpoint<PaymentWebhookCommand, IResult>
+public sealed record ChargilyWebhookRequest(
+    string Id,
+    string Entity,
+    string Type,
+    ChargilyCheckoutData Data
+);
+
+public sealed record ChargilyCheckoutData(
+    string Id,
+    decimal Amount,
+    string Currency,
+    string Status,
+    List<string> Metadata
+);
+
+public class PaymentWebhook(IMediator mediator) : Endpoint<ChargilyWebhookRequest, IResult>
 {
     private readonly IMediator _mediator = mediator;
     public override void Configure()
@@ -27,12 +42,6 @@ public class PaymentWebhook(IMediator mediator) : Endpoint<PaymentWebhookCommand
                 "and canceled, while non-terminal states are ignored. \n" +
                 "The webhook signature must be validated before processing the request.";
 
-            s.ExampleRequest = new PaymentWebhookCommand(
-                CheckoutId: "01JABCDEF123456789XYZ",
-                EventType: "checkout.paid",
-                Status: "paid"
-            );
-
             s.Responses[200] = "Webhook processed successfully.";
             s.Responses[400] = "Invalid webhook request or signature.";
             s.Responses[404] = "The payment associated with the checkout was not found.";
@@ -43,12 +52,15 @@ public class PaymentWebhook(IMediator mediator) : Endpoint<PaymentWebhookCommand
             .Produces<Updated>(200)
             .ProducesProblemDetails(400)
             .ProducesProblemDetails(404)
-            .ProducesProblemDetails(500));
+            .ProducesProblemDetails(500)
+            .ExcludeFromDescription());
     }
 
-    public override async Task<IResult> ExecuteAsync(PaymentWebhookCommand req, CancellationToken ct)
+    public override async Task<IResult> ExecuteAsync(ChargilyWebhookRequest req, CancellationToken ct)
     {
-        var result = await _mediator.Send(req, ct);
+        var command = new PaymentWebhookCommand(req.Data.Id, req.Type, req.Data.Status);
+
+        var result = await _mediator.Send(command, ct);
 
         return result.Match(
             onSuccess: value => Results.Ok(value),
