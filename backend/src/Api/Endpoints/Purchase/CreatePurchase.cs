@@ -3,7 +3,6 @@ using Application.Features.Purchases.Command.CreatePurchase;
 using Domain.Common.ValueObjects.Address;
 using FastEndpoints;
 using MediatR;
-//using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Purchase;
 
