@@ -74,7 +74,7 @@ public sealed class EmailService(ILogger<EmailService> logger, IOptions<EmailOpt
             <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6;">
                 <h2>Purchase Notification</h2>
-                <p>Thank you for your purchase! Here are the details:</p>
+                <p>Here are the purchase details:</p>
                 <p><strong>Purchase ID:</strong> {purchaseId}</p>
                 <p><strong>Customer Name:</strong> {fullName}</p>
                 <p><strong>Customer Phone Number:</strong> {phoneNumber}</p>
@@ -92,7 +92,7 @@ public sealed class EmailService(ILogger<EmailService> logger, IOptions<EmailOpt
                         {itemsHtml}
                     </tbody>
                 </table>
-                <p><strong>Total Amount:</strong> {totalAmount:C}</p>
+                <p><strong>Total Amount:</strong> {totalAmount:N2} DZ</p>
             </body>
             </html>
             """;
