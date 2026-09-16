@@ -109,4 +109,10 @@ public static class ApplicationErrors
     public static Error DatabaseSaveFailed => Error.Failure(
         code: "Database_Save_Failed",
         description: "Failed to save changes to the database.");
+    public static Error AccountAlreadyExists => Error.Conflict(
+        code: "Account_Already_Exists",
+        description: "An account with this provider already exists.");
+    public static Error UserAlreadyExists => Error.Conflict(
+        code: "User_Already_Exists",
+        description: "A user with this email already exists.");
 }

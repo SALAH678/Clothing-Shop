@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.BackgroundJobs;
 using Application.Common.Interfaces.Repositories;
 using Application.Common.Interfaces.Services;
+using Chargily.Pay;
 using infrastructure.BackgroundJobs;
 using infrastructure.Data;
 using infrastructure.Data.Interceptors;
@@ -62,6 +63,8 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         // Image Service
         services.AddScoped<IImageService, ImageService>();
+
+        services.AddScoped<IPaymentGatewayService, ChargilyPaymentGatewayService>();
         
         services.AddScoped<IEmailService, EmailService>();
 
@@ -80,15 +83,27 @@ public static class DependencyInjection
         //Options configuration
         services
             .AddOptions<JwtSettings>()
-            .BindConfiguration(JwtSettings.SectionName);
+            .BindConfiguration(JwtSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services
             .AddOptions<ImageStorageOptions>()
-            .BindConfiguration(ImageStorageOptions.SectionName);
+            .BindConfiguration(ImageStorageOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services
             .AddOptions<EmailOptions>()
-            .BindConfiguration(EmailOptions.SectionName);
+            .BindConfiguration(EmailOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services
+            .AddOptions<ChargilyOptions>()
+            .BindConfiguration(ChargilyOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         //configure authentication
         var jwtSettings = configuration
@@ -147,7 +162,18 @@ public static class DependencyInjection
                 args: [nameof(ImageCleanupJob)]); // check image cleanup job
 
         services.AddAuthorization();
-            
+
+        //configure chargily pay client
+        var chargilyOptions = configuration
+            .GetSection(ChargilyOptions.SectionName)
+            .Get<ChargilyOptions>()!;
+
+        services.AddGlobalChargilyPayClient(config =>
+        {
+            config.IsLiveMode = chargilyOptions.IsLiveMode; // switch to true when you go live
+            config.ApiSecretKey = chargilyOptions.ApiSecretKey;
+        });
+
         return services;
     }
 }

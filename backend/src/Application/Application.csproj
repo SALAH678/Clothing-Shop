@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="Chargily.Pay" Version="2.0.3" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.2.0" />
   </ItemGroup>
@@ -37,7 +38,6 @@
     <Folder Include="Features\Products\Commands\UpdateProduct\" />
     <Folder Include="Features\Products\Dtos\" />
     <Folder Include="Features\Products\Queries\GetProductById\" />
-    <Folder Include="Features\Purchases\" />
     <Folder Include="Features\Variants\Commands\" />
     <Folder Include="Features\Variants\Mappers\" />
     <Folder Include="Features\Variants\Queries\" />

@@ -9,6 +9,7 @@ namespace Api.Endpoints.Category;
 
 public class GetCategories(IMediator mediator) : EndpointWithoutRequest<IResult>
 {
+    
     private readonly IMediator _mediator = mediator;
 
     public override void Configure()
