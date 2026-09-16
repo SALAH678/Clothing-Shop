@@ -8,6 +8,7 @@ export interface CartContextType {
   addToCart: (variantId: string, quantity: number) => Promise<void>;
   removeFromCart: (cartItemId: string) => Promise<void>;
   updateQuantity: (cartItemId: string, delta: number) => void;
+  clearCart: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
   cartCount: number;

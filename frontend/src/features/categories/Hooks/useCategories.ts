@@ -6,6 +6,8 @@ export function useCategories() {
     queryKey: ["categories"],
     queryFn: getCategories,
     staleTime: 1000 * 60 * 15, // 15 minutes
+    gcTime: 1000 * 60 * 15, // Keep inactive categories cached for 15 minutes
+    refetchOnWindowFocus: false,
     retry: 2, // Retry two times on failure
   });
 }

@@ -2,15 +2,24 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useCart } from "../../features/carts/hooks/useCart";
+import type { Product, Variant } from "../../features/products/types/Product";
 
 export default function ProductActions({
   variantId,
   quantity,
   disabled,
+  selectedColor,
+  selectedSize,
+  product,
+  selectedVariant,
 }: {
   variantId?: string;
   quantity: number;
   disabled?: boolean;
+  selectedColor?: string;
+  selectedSize?: string;
+  product?: Product;
+  selectedVariant?: Variant;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,8 +34,8 @@ export default function ProductActions({
       return;
     }
 
-    if (!variantId || disabled) {
-      setError("Choose an available size and color first.");
+    if (!selectedColor || !selectedSize || !variantId || disabled) {
+      setError("u need to choose color and size");
       return;
     }
 
@@ -39,6 +48,42 @@ export default function ProductActions({
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      navigate("/auth/login", { state: { from: location } });
+      return;
+    }
+
+    if (!selectedColor || !selectedSize || !variantId || !selectedVariant) {
+      setError("u need to choose color and size");
+      return;
+    }
+
+    if (disabled || selectedVariant.stockQuantity < 1) {
+      setError("This product is currently out of stock.");
+      return;
+    }
+
+    setError(null);
+
+    const mainImage = product?.images?.find((img) => img.isMain) || product?.images?.[0];
+
+    navigate("/checkout", {
+      state: {
+        origin: "BuyNow",
+        buyNowItem: {
+          variantId,
+          quantity,
+          name: product?.name ?? "Selected Item",
+          price: product ? product.basePrice - (product.discount ?? 0) : 0,
+          color: selectedColor,
+          size: selectedSize,
+          imageUrl: mainImage?.imageUrl ?? "",
+        },
+      },
+    });
   };
 
   return (
@@ -65,7 +110,11 @@ export default function ProductActions({
         </svg>
         {isAdding ? "ADDING..." : "ADD TO BAG"}
       </button>
-      <button className="w-full py-4 border-2 border-primary bg-transparent text-primary font-mono text-lg font-black tracking-widest uppercase hover:bg-primary hover:text-white transition-all duration-200 flex justify-center items-center gap-2 hover:shadow-[4px_4px_0_0_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+      <button
+        type="button"
+        onClick={handleBuyNow}
+        className="w-full py-4 border-2 border-primary bg-transparent text-primary font-mono text-lg font-black tracking-widest uppercase hover:bg-primary hover:text-white transition-all duration-200 flex justify-center items-center gap-2 hover:shadow-[4px_4px_0_0_#000] active:shadow-none active:translate-x-1 active:translate-y-1"
+      >
         <svg
           width="24"
           height="24"

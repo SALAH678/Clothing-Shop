@@ -3,7 +3,11 @@ import type { Variant } from "../../features/products/types/Product";
 
 interface ProductSelectorsProps {
   variants: Variant[];
-  onSelectionChange?: (variant: Variant | undefined, quantity: number) => void;
+  onSelectionChange?: (
+    variant: Variant | undefined,
+    quantity: number,
+    selection: { selectedColor: string; selectedSize: string }
+  ) => void;
 }
 
 const colorHexes: Record<string, string> = {
@@ -28,31 +32,32 @@ function getColorHex(color: string) {
 export default function ProductSelectors({ variants, onSelectionChange }: ProductSelectorsProps) {
   const colors = [...new Set(variants.map((variant) => variant.color))];
   const sizes = [...new Set(variants.map((variant) => variant.size))];
-  const [selectedColor, setSelectedColor] = useState(colors[0] ?? "");
-  const [selectedSize, setSelectedSize] = useState(sizes[0] ?? "");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const selectedVariant = variants.find((variant) => variant.color === selectedColor && variant.size === selectedSize);
   const stockQuantity = selectedVariant?.stockQuantity ?? 0;
   const hasStock = stockQuantity > 0;
-  const quantityError = !selectedVariant
-    ? "This size and color combination is unavailable."
-    : !hasStock
-      ? "This product is out of stock."
-      : quantity >= stockQuantity
+  const quantityError =
+    selectedColor && selectedSize && !selectedVariant
+      ? "This size and color combination is unavailable."
+      : selectedVariant && !hasStock
         ? "This product is out of stock."
-        : null;
+        : selectedVariant && quantity >= stockQuantity
+          ? "This product is out of stock."
+          : null;
 
   useEffect(() => {
-    onSelectionChange?.(selectedVariant, quantity);
-  }, [onSelectionChange, quantity, selectedVariant]);
+    onSelectionChange?.(selectedVariant, quantity, { selectedColor, selectedSize });
+  }, [onSelectionChange, quantity, selectedVariant, selectedColor, selectedSize]);
 
   const selectColor = (color: string) => {
-    setSelectedColor(color);
+    setSelectedColor((prev) => (prev === color ? "" : color));
     setQuantity(1);
   };
 
   const selectSize = (size: string) => {
-    setSelectedSize(size);
+    setSelectedSize((prev) => (prev === size ? "" : size));
     setQuantity(1);
   };
 
@@ -62,7 +67,9 @@ export default function ProductSelectors({ variants, onSelectionChange }: Produc
       <div>
         <div className="flex justify-between items-center mb-4">
           <span className="font-mono text-sm font-bold uppercase">Color</span>
-          <span className="font-mono text-sm text-primary font-black uppercase">{selectedColor}</span>
+          <span className="font-mono text-sm text-primary font-black uppercase">
+            {selectedColor || "None selected"}
+          </span>
         </div>
         <div className="flex gap-4">
           {colors.map((color) => (

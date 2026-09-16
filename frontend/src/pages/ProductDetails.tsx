@@ -19,6 +19,8 @@ export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const [selectedVariant, setSelectedVariant] = useState<Variant>();
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const { data: product, isPending, isError, refetch } = useProduct(id);
 
   if (isPending) {
@@ -50,15 +52,21 @@ export default function ProductDetails() {
           />
           <ProductSelectors
             variants={product.variants}
-            onSelectionChange={(variant, quantity) => {
+            onSelectionChange={(variant, quantity, selection) => {
               setSelectedVariant(variant);
               setSelectedQuantity(quantity);
+              setSelectedColor(selection.selectedColor);
+              setSelectedSize(selection.selectedSize);
             }}
           />
           <ProductActions
             variantId={selectedVariant?.id}
             quantity={selectedQuantity}
             disabled={!selectedVariant || selectedVariant.stockQuantity < 1}
+            selectedColor={selectedColor}
+            selectedSize={selectedSize}
+            product={product}
+            selectedVariant={selectedVariant}
           />
         </div>
       </div>

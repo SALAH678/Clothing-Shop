@@ -10,6 +10,9 @@ import ProtectedRoute from "../features/auth/components/ProtoctedRoute";
 import Profile from "../pages/Profile";
 import VerifyEmail from "../pages/VerifyEmail";
 import ProductDetails from "../pages/ProductDetails";
+import Checkout from "../pages/CheckOut";
+import CheckoutSuccess from "../pages/CheckOutSuccess";
+import CheckoutFailed from "../pages/CheckOutFailed";
 
 export default function Approutes() {
   return (
@@ -33,6 +36,9 @@ export default function Approutes() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/checkout/failed" element={<CheckoutFailed />} />
           <Route element={<MainLayout />}>
             <Route path="/profile" element={<Profile />} />
           </Route>

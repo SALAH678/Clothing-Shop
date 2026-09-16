@@ -1,5 +1,7 @@
+import { useLocation, useNavigate } from "react-router-dom";
 import { X, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "../hooks/useCart";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 function getImageUrl(imageUrl: string | null) {
   if (!imageUrl) return undefined;
@@ -10,9 +12,38 @@ function getImageUrl(imageUrl: string | null) {
 }
 
 export default function CartDrawer() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const { items, isLoading, error, isCartOpen, setIsCartOpen, removeFromCart, cartTotal } = useCart();
 
   if (!isCartOpen) return null;
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+
+    if (!isAuthenticated) {
+      navigate("/auth/login", { state: { from: location } });
+      return;
+    }
+
+    if (items.length === 0) return;
+
+    navigate("/checkout", {
+      state: {
+        origin: "Cart",
+        cartItems: items.map((item) => ({
+          variantId: item.variant.id,
+          quantity: item.quantity,
+          name: item.variant.product.name,
+          price: item.variant.product.basePrice - item.variant.product.discount,
+          color: item.variant.color,
+          size: item.variant.size,
+          imageUrl: item.variant.product.imageUrl ?? "",
+        })),
+      },
+    });
+  };
 
   return (
     <>
@@ -38,60 +69,58 @@ export default function CartDrawer() {
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-container-lowest">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {isLoading ? (
-            <div className="h-full flex items-center justify-center font-mono uppercase">Loading cart...</div>
+            <div className="h-full flex items-center justify-center">
+              <span className="font-mono text-xs uppercase animate-pulse">Updating cart...</span>
+            </div>
           ) : items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-              <ShoppingBag className="w-24 h-24 text-primary opacity-20" />
-              <span className="font-mono text-lg uppercase font-bold text-primary opacity-50">Cart is empty</span>
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-primary">
+              <ShoppingBag className="w-12 h-12 mb-4 opacity-50 stroke-1" />
+              <p className="font-mono text-sm uppercase font-bold text-secondary">Your Bag is Empty</p>
             </div>
           ) : (
             items.map((item) => (
               <div
                 key={item.id}
-                className="flex gap-4 bg-white border-2 border-primary p-3 group transition-all duration-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#000]"
+                className="flex gap-4 p-4 border-2 border-primary bg-white shadow-[4px_4px_0_0_#000] relative group hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-[6px_6px_0_0_#000] transition-all duration-200"
               >
-                <div className="w-24 h-28 sm:w-28 sm:h-32 border-2 border-primary bg-surface-container shrink-0 overflow-hidden relative">
-                  <img
-                    src={getImageUrl(item.variant.product.imageUrl)}
-                    alt={item.variant.product.name}
-                    className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-500 scale-105 group-hover:scale-100"
-                  />
-                  <div className="absolute inset-0 border-[3px] border-transparent group-hover:border-primary transition-colors"></div>
+                <div className="w-20 h-24 bg-surface border-2 border-primary shrink-0 relative overflow-hidden">
+                  {item.variant.product.imageUrl && (
+                    <img
+                      src={getImageUrl(item.variant.product.imageUrl)}
+                      alt={item.variant.product.name}
+                      className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300"
+                    />
+                  )}
                 </div>
-
-                <div className="flex-1 flex flex-col justify-between py-1">
-                  <div className="flex justify-between items-start gap-2">
-                    <div>
-                      <h3 className="font-mono text-xs sm:text-sm font-bold line-clamp-2 uppercase leading-tight">
-                        {item.variant.product.name}
-                      </h3>
-                      <p className="font-mono text-[10px] uppercase text-secondary mt-1">
-                        {item.variant.color} / {item.variant.size}
-                      </p>
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="pr-6">
+                    <h3 className="font-mono text-sm font-black uppercase leading-tight line-clamp-1">
+                      {item.variant.product.name}
+                    </h3>
+                    <div className="flex gap-3 text-xs font-mono text-secondary mt-1">
+                      <span>SZ: {item.variant.size}</span>
+                      <span>•</span>
+                      <span>CLR: {item.variant.color}</span>
                     </div>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-primary hover:text-white hover:bg-red-600 transition-colors border-2 border-transparent hover:border-primary p-1 active:scale-90"
-                      title="Remove item"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
-
-                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <p className="font-mono text-xs font-bold uppercase">Quantity: {item.quantity}</p>
-
-                    <p className="font-mono text-sm sm:text-base font-black whitespace-nowrap">
-                      {(
-                        (item.variant.product.basePrice - item.variant.product.discount) *
-                        item.quantity
-                      ).toLocaleString()}{" "}
-                      DA
-                    </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="font-mono text-xs font-bold border border-primary px-2 py-0.5 bg-surface">
+                      QTY: {item.quantity}
+                    </span>
+                    <span className="font-mono text-sm font-black">
+                      {(item.variant.product.basePrice - item.variant.product.discount).toLocaleString()} DA
+                    </span>
                   </div>
                 </div>
+                <button
+                  onClick={() => removeFromCart(item.id)}
+                  className="absolute top-4 right-4 text-secondary hover:text-red-600 transition-colors"
+                  aria-label="Remove item"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))
           )}
@@ -109,7 +138,10 @@ export default function CartDrawer() {
               <span className="font-mono text-sm font-bold uppercase tracking-widest text-secondary">Total Amount</span>
               <span className="font-display text-3xl font-black">{cartTotal.toLocaleString()} DA</span>
             </div>
-            <button className="w-full bg-primary text-white font-mono text-lg uppercase py-5 px-6 border-2 border-primary tracking-widest font-black transition-all duration-300 ease-out hover:-translate-y-2 hover:-translate-x-1 shadow-[4px_4px_0_0_#000] hover:shadow-[8px_8px_0_0_#000] hover:bg-white hover:text-black active:translate-y-0 active:translate-x-0 active:shadow-none">
+            <button
+              onClick={handleCheckout}
+              className="w-full bg-primary text-white font-mono text-lg uppercase py-5 px-6 border-2 border-primary tracking-widest font-black transition-all duration-300 ease-out hover:-translate-y-2 hover:-translate-x-1 shadow-[4px_4px_0_0_#000] hover:shadow-[8px_8px_0_0_#000] hover:bg-white hover:text-black active:translate-y-0 active:translate-x-0 active:shadow-none cursor-pointer"
+            >
               PROCEED TO CHECKOUT
             </button>
           </div>

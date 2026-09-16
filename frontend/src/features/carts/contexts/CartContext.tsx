@@ -97,6 +97,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const clearCart = () => {
+    setItems([]);
+    setError(null);
+  };
+
   const cartCount = items.length;
   const cartTotal = getCartTotal(items);
 
@@ -109,6 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        clearCart,
         isCartOpen,
         setIsCartOpen,
         cartCount,
