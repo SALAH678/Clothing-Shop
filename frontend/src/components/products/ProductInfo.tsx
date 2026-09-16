@@ -1,11 +1,21 @@
+import { getPrice, formatPriceDA } from "../../lib/pricing";
+
 interface ProductInfoProps {
   title: string;
   sku: string;
-  price: string;
-  description?: string; // Keep prop signature just in case it's passed, but make optional
+  basePrice: number;
+  discount?: number | null;
+  description?: string | null;
 }
 
-export default function ProductInfo({ title, sku, price, description }: ProductInfoProps) {
+export default function ProductInfo({
+  title,
+  sku,
+  basePrice,
+  discount,
+  description,
+}: ProductInfoProps) {
+  const price = formatPriceDA(getPrice(basePrice, discount));
   return (
     <div className="p-8 border-b-2 border-primary bg-surface h-full flex flex-col justify-center">
       <h1 className="font-display text-4xl md:text-5xl font-black uppercase mb-4 wrap-break-word tracking-tighter">

@@ -1,26 +1,29 @@
+import { memo } from "react";
 import Sort from "../../../components/products/Sort";
-import type { Product } from "../types/Product";
 import ProductItem from "./ProductItem";
+import type { Product } from "../types/Product";
 
-export default function Products({
-  products,
-  productsCount,
-  currentPage,
-  totalPages,
-  sort,
-  onSortChange,
-  onShowMore,
-  isLoadingMore,
-}: {
+interface ProductsProps {
   products: Product[];
   productsCount: number;
-  currentPage: number;
-  totalPages: number;
   sort: string;
   onSortChange: (value: string) => void;
   onShowMore?: () => void;
   isLoadingMore?: boolean;
-}) {
+  hasNextPage?: boolean;
+  hasReachedCap?: boolean;
+}
+
+function Products({
+  products,
+  productsCount,
+  sort,
+  onSortChange,
+  onShowMore,
+  isLoadingMore,
+  hasNextPage,
+  hasReachedCap,
+}: ProductsProps) {
   return (
     <section className="grow flex flex-col">
       <Sort count={productsCount} value={sort} onChange={onSortChange} />
@@ -30,13 +33,18 @@ export default function Products({
           <p className="font-body text-xs text-secondary/70">Try adjusting your search terms or filters.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4 md:p-6 bg-surface-container-lowest">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4 md:p-6 bg-surface-container-lowest [content-visibility:auto]">
           {products.map((product) => (
             <ProductItem key={product.id} product={product} />
           ))}
         </div>
       )}
-      {currentPage < totalPages && (
+      {hasReachedCap && (
+        <p className="text-center font-mono text-xs uppercase text-secondary tracking-widest px-6 pb-2 bg-surface-container-lowest">
+          Showing first 60 items — refine filters to see more.
+        </p>
+      )}
+      {hasNextPage && (
         <div className="flex justify-center p-6 md:p-8 bg-surface-container-lowest">
           <button
             onClick={onShowMore}
@@ -50,3 +58,5 @@ export default function Products({
     </section>
   );
 }
+
+export default memo(Products);

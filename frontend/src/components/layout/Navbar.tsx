@@ -1,7 +1,13 @@
+import { useState } from "react";
 import { Search, ShoppingCart, User } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useCart } from "../../features/carts/hooks/useCart";
+import { useCategories } from "../../features/categories/hooks/useCategories";
+import { createSlug } from "../ui/Slug";
+import type { Category } from "../../features/categories/types/Category";
+
+const NAVBAR_CATEGORY_NAMES = ["T-Shirt Oversize", "Pants", "Old Money Shirts", "Sneakers", "Ultra Baggy"];
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -9,22 +15,31 @@ export default function Navbar() {
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
   const { cartCount, setIsCartOpen } = useCart();
+  const { data: categories } = useCategories();
+
+  // Derive the nav from real categories so links never point at a 404 slug.
+  const navCategories: Category[] = NAVBAR_CATEGORY_NAMES.map((name) =>
+    categories?.find((category: Category) => category.categoryName === name),
+  ).filter((category: Category | undefined): category is Category => Boolean(category));
 
   const currentSearchParam = searchParams.get("search") ?? "";
+  // Controlled inputs keep focus across navigations; search only runs when the
+  // user submits (search-icon click or Enter), never while typing.
+  const [mobileSearch, setMobileSearch] = useState(currentSearchParam);
+  const [desktopSearch, setDesktopSearch] = useState(currentSearchParam);
+  const [prevSearchParam, setPrevSearchParam] = useState(currentSearchParam);
 
-  const handleCartClick = () => {
-    if (!isAuthenticated) {
-      navigate("/auth/login", { state: { from: location } });
-      return;
-    }
+  // Keep both inputs in sync when the URL changes from outside the input
+  // (back/forward, header links, "clear search"). Adjusted during render rather
+  // than in an effect so the DOM is never painted with the stale value.
+  if (prevSearchParam !== currentSearchParam) {
+    setPrevSearchParam(currentSearchParam);
+    setMobileSearch(currentSearchParam);
+    setDesktopSearch(currentSearchParam);
+  }
 
-    setIsCartOpen(true);
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const trimmed = String(formData.get("search") ?? "").trim();
+  const submitSearch = (raw: string) => {
+    const trimmed = raw.trim();
 
     // Blur active input so it collapses back to icon
     if (document.activeElement instanceof HTMLElement) {
@@ -50,6 +65,21 @@ export default function Navbar() {
     navigate(`${targetPath}${queryString ? `?${queryString}` : ""}`);
   };
 
+  const handleSearchSubmit = (e: React.FormEvent, scope: "mobile" | "desktop") => {
+    e.preventDefault();
+    const raw = scope === "mobile" ? mobileSearch : desktopSearch;
+    submitSearch(raw);
+  };
+
+  const handleCartClick = () => {
+    if (!isAuthenticated) {
+      navigate("/auth/login", { state: { from: location } });
+      return;
+    }
+
+    setIsCartOpen(true);
+  };
+
   return (
     <header className="bg-surface sticky top-0 z-50 border-b border-primary flex flex-col md:flex-row justify-between items-center w-full px-4 md:px-4 lg:px-6 py-4 transition-all duration-300 gap-4 md:gap-6 lg:gap-8">
       <div className="flex items-center justify-between w-full md:w-auto shrink-0">
@@ -61,8 +91,7 @@ export default function Navbar() {
         </Link>
         <div className="flex gap-4 md:hidden items-center">
           <form
-            key={`mobile-search-${currentSearchParam}`}
-            onSubmit={handleSearch}
+            onSubmit={(e) => handleSearchSubmit(e, "mobile")}
             className="group relative flex items-center justify-end h-6"
           >
             <button type="submit" aria-label="Search" className="z-10 focus:outline-none cursor-pointer">
@@ -71,8 +100,10 @@ export default function Navbar() {
             <input
               type="text"
               name="search"
+              data-search-scope="mobile"
               placeholder="Search..."
-              defaultValue={currentSearchParam}
+              value={mobileSearch}
+              onChange={(e) => setMobileSearch(e.target.value)}
               className="absolute right-0 w-0 opacity-0 group-hover:w-32 group-hover:opacity-100 group-hover:border-primary focus:w-32 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-xs py-1 pr-8 outline-none z-0 cursor-text"
             />
           </form>
@@ -90,20 +121,20 @@ export default function Navbar() {
         </div>
       </div>
       <nav className="hidden md:flex gap-2 md:gap-3 lg:gap-6 items-center flex-nowrap justify-center flex-1 min-w-0">
-        {["T-Shirt Oversize", "Pants", "Old Money Shirts", "Sneakers", "Ultra Baggy"].map((item, i, arr) => (
-          <div key={item} className="flex items-center gap-2 md:gap-3 lg:gap-6">
+        {navCategories.map((category, i, arr) => (
+          <div key={category.id} className="flex items-center gap-2 md:gap-3 lg:gap-6">
             <Link
-              to={`/categories/${item.toLowerCase().trim().replace(/\s+/g, "-")}`}
+              to={`/categories/${createSlug(category.categoryName)}`}
               className="relative group inline-block active:scale-95 transition-transform duration-150"
             >
               <span className="text-secondary font-mono text-[9px] md:text-[10px] lg:text-sm uppercase font-bold tracking-widest whitespace-nowrap block">
-                {item}
+                {category.categoryName}
               </span>
               <span
                 aria-hidden="true"
                 className="absolute top-0 left-0 text-primary font-mono text-[9px] md:text-[10px] lg:text-sm uppercase font-bold tracking-widest whitespace-nowrap overflow-hidden w-0 group-hover:w-full transition-all duration-300 ease-out"
               >
-                {item}
+                {category.categoryName}
               </span>
               <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out"></span>
             </Link>
@@ -113,8 +144,7 @@ export default function Navbar() {
       </nav>
       <div className="hidden md:flex gap-4 lg:gap-6 items-center shrink-0">
         <form
-          key={`desktop-search-${currentSearchParam}`}
-          onSubmit={handleSearch}
+          onSubmit={(e) => handleSearchSubmit(e, "desktop")}
           className="group relative flex items-center justify-end h-5 lg:h-6"
         >
           <button type="submit" aria-label="Search" className="z-10 focus:outline-none cursor-pointer">
@@ -123,8 +153,10 @@ export default function Navbar() {
           <input
             type="text"
             name="search"
+            data-search-scope="desktop"
             placeholder="Search product..."
-            defaultValue={currentSearchParam}
+            value={desktopSearch}
+            onChange={(e) => setDesktopSearch(e.target.value)}
             className="absolute right-0 w-0 opacity-0 group-hover:w-35 lg:group-hover:w-50 group-hover:opacity-100 group-hover:border-primary focus:w-35 lg:focus:w-50 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-[10px] lg:text-xs py-1 pr-6 lg:pr-8 outline-none z-0 cursor-text"
           />
         </form>

@@ -40,6 +40,17 @@ export default function Profile() {
     }
   }, [userProfile, reset]);
 
+  // `successTick` restarts the auto-hide timer on every successful save, so
+  // repeated saves cannot stack up multiple pending timeouts, and the effect
+  // cleanup cancels the timer on unmount.
+  const [successTick, setSuccessTick] = useState(0);
+
+  useEffect(() => {
+    if (successTick === 0) return;
+    const timer = setTimeout(() => setUpdateSuccess(false), 4000);
+    return () => clearTimeout(timer);
+  }, [successTick]);
+
   const onSubmit = (data: FieldValues) => {
     setUpdateSuccess(false);
     updateProfile(
@@ -52,7 +63,7 @@ export default function Profile() {
         onSuccess: () => {
           setIsEditing(false);
           setUpdateSuccess(true);
-          setTimeout(() => setUpdateSuccess(false), 4000);
+          setSuccessTick((tick) => tick + 1);
         },
       },
     );

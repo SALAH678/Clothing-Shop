@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // If user is not logged in or token is expired, redirect to login page
   // We pass state={{ from: location }} so we can redirect back after successful login
-  if (!accessToken) {
+  if (accessToken === null || accessToken === undefined) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 

@@ -1,6 +1,7 @@
 import { apiClient } from "../../../lib/apiClient";
 import type { LoginResponse } from "../types/LoginResponse";
 import type {
+  GoogleLoginRequest,
   GoogleRegisterRequest,
   LoginRequest,
   RegisterRequest,
@@ -24,7 +25,12 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function registerWithGoogle(data: GoogleRegisterRequest): Promise<LoginResponse> {
-  const response = await apiClient.post("/auth/google", data);
+  const response = await apiClient.post("/auth/google/register", data);
+  return response.data;
+}
+
+export async function loginWithGoogle(data: GoogleLoginRequest): Promise<LoginResponse> {
+  const response = await apiClient.post("/auth/google/login", data);
   return response.data;
 }
 

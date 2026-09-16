@@ -10,7 +10,7 @@ export interface CreatePurchaseRequest {
   street: string;
   city: string;
   wilaya: string;
-  origin: "BuyNow" | "Cart" | string;
+  origin: "BuyNow" | "Cart";
   purchaseItems: PurchaseItem[];
 }
 

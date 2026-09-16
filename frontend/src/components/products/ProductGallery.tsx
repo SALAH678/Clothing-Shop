@@ -2,10 +2,20 @@ import { useState } from "react";
 
 interface ProductGalleryProps {
   images: string[];
+  productName?: string;
 }
 
-export default function ProductGallery({ images }: ProductGalleryProps) {
+export default function ProductGallery({ images, productName = "Product" }: ProductGalleryProps) {
   const [mainImage, setMainImage] = useState(images[0]);
+  const [prevImages, setPrevImages] = useState(images);
+
+  // Reset the selected image when the gallery source changes (e.g. navigating
+  // between products reuses this component). Adjusting state during render is the
+  // React-recommended alternative to a sync effect: no extra commit, no flash.
+  if (prevImages !== images) {
+    setPrevImages(images);
+    setMainImage(images[0]);
+  }
 
   if (images.length === 0) {
     return (
@@ -19,7 +29,17 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
     <div className="col-span-1 md:col-span-7 flex flex-col md:flex-row-reverse border-b-2 md:border-b-0 border-primary gap-0 md:h-[80vh]">
       {/* Primary Image */}
       <div className="w-full md:w-4/5 h-[60vh] md:h-full bg-surface-container relative md:border-l-2 border-primary shrink-0 flex items-center justify-center">
-        <img alt="Product" className="w-full h-full object-contain p-4" src={mainImage} />
+        {mainImage ? (
+          <img
+            alt={productName}
+            className="w-full h-full object-contain p-4"
+            src={mainImage}
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          <span className="font-mono uppercase">No image</span>
+        )}
         <div className="absolute top-4 left-4 border-2 border-primary bg-surface px-3 py-1 font-mono text-sm font-bold z-10 uppercase">
           FW24 // DROP 01
         </div>
@@ -31,15 +51,19 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
       >
         {images.map((img, idx) => (
           <button
-            key={idx}
+            key={`${img}-${idx}`}
+            type="button"
+            aria-label={`View image ${idx + 1} of ${productName}`}
+            aria-pressed={mainImage === img}
             className={`shrink-0 w-32 md:w-full aspect-[0.8] p-0 group border-2 border-primary ${mainImage === img ? "opacity-100" : "opacity-60 hover:opacity-100"} transition-opacity`}
             onClick={() => setMainImage(img)}
           >
             <img
-              alt={`Thumbnail ${idx + 1}`}
-              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+              alt={`${productName} thumbnail ${idx + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               src={img}
-              style={{ filter: mainImage === img ? "grayscale(0%)" : "grayscale(100%)" }}
+              loading="lazy"
+              decoding="async"
             />
           </button>
         ))}

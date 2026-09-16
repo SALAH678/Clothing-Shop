@@ -1,40 +1,40 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { type Product } from "../types/Product";
+import { resolveImageUrl } from "../../../lib/imageUrl";
+import { formatPriceDA, getPrice } from "../../../lib/pricing";
 
 export default function ProductItem({ product }: { product: Product }) {
-  const navigate = useNavigate();
   const { categoryName } = useParams<{ categoryName: string }>();
   const productPath = `/categories/${encodeURIComponent(categoryName ?? "all")}/${product.id}`;
-  const backEndUrl: string = import.meta.env.VITE_API_URL ?? "";
-  const mainImage = product.images.find((image) => image.isMain);
-
-  const mainImageUrl = mainImage?.imageUrl
-    ? /^https?:\/\//i.test(mainImage.imageUrl)
-      ? mainImage.imageUrl
-      : `${backEndUrl.replace(/\/$/, "")}/${mainImage.imageUrl.replace(/^\//, "")}`
-    : undefined;
+  const mainImage = product.images.find((image) => image.isMain) ?? product.images[0];
+  const mainImageUrl = resolveImageUrl(mainImage?.imageUrl);
 
   return (
-    <article
-      className="group relative bg-surface border border-primary flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1 active:scale-95 active:shadow-md cursor-pointer"
-      onClick={() => navigate(productPath)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") navigate(productPath);
-      }}
-      role="link"
-      tabIndex={0}
+    <Link
+      to={productPath}
+      className="group relative bg-surface border border-primary flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1 active:scale-95 active:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
       <div className="relative aspect-[0.8] overflow-hidden border-b border-primary bg-surface-container">
-        <img
-          src={mainImageUrl}
-          alt={product.name}
-          className="w-full h-full object-cover grayscale contrast-125 transition-all duration-500 ease-in-out group-hover:grayscale-0 group-hover:contrast-110 group-hover:scale-105"
-        />
+        {mainImageUrl ? (
+          <img
+            src={mainImageUrl}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center font-mono text-[10px] text-zinc-400">
+            NO IMG
+          </div>
+        )}
       </div>
       <div className="p-4 flex flex-col grow justify-between">
         <h3 className="font-mono text-sm uppercase line-clamp-2 font-bold">{product.name}</h3>
-        <span className="font-mono text-sm mt-2 text-secondary">{product.basePrice}</span>
+        <span className="font-mono text-sm mt-2 text-secondary">
+          {formatPriceDA(getPrice(product.basePrice, product.discount))}
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }

@@ -2,7 +2,7 @@ import Hero from "../components/home/Hero";
 import Collections from "../components/home/Collections";
 import Features from "../components/home/Features";
 import StoreLocation from "../components/home/StoreLocation";
-import { useCategories } from "../features/categories/Hooks/useCategories";
+import { useCategories } from "../features/categories/hooks/useCategories";
 import CategoriesSkeleton from "../features/categories/components/CategoriesSkeleton";
 import ErrorState from "../components/ui/ErrorState";
 import EmptyState from "../components/ui/EmptyState";

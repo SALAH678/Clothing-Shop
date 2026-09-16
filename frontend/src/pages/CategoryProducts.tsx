@@ -1,14 +1,16 @@
-import { startTransition, useEffect, useState } from "react";
+import { useDeferredValue, useMemo, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useParams } from "react-router-dom";
-import Filter from "../components/products/Filters";
+import Filters, { type FilterValues } from "../components/products/Filters";
 import Products from "../features/products/components/Products";
-import { useProducts } from "../features/products/hooks/useProducts";
-import { useCategories } from "../features/categories/Hooks/useCategories";
+import { MAX_PAGES, useInfiniteProducts } from "../features/products/hooks/useProducts";
+import { useCategories } from "../features/categories/hooks/useCategories";
+import { createSlug } from "../components/ui/Slug";
 import EmptyState from "../components/ui/EmptyState";
 import ErrorState from "../components/ui/ErrorState";
 import ProductsSkeleton from "../features/products/components/ProductsSkeleton";
-import type { Product } from "../features/products/types/Product";
+
+const PAGE_SIZE = 12;
 
 export default function CategoryProducts() {
   const { categoryName } = useParams<{ categoryName: string }>();
@@ -22,149 +24,131 @@ export default function CategoryProducts() {
   const isAllProducts = categorySlug === "all";
 
   const categoryId = categories?.find(
-    (category) => category.categoryName.toLowerCase().replace(/\s+/g, "-") === categorySlug,
+    (category) => createSlug(category.categoryName) === categorySlug,
   )?.id;
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const search = searchParams.get("search")?.trim() || null;
-  const hasSearch = Boolean(search);
+  const rawSearch = searchParams.get("search")?.trim() || undefined;
+  // Defer query while user types so each keystroke doesn't fire a request.
+  const search = useDeferredValue(rawSearch);
   const effectiveCategoryId = isAllProducts ? undefined : categoryId;
 
   const sort = searchParams.get("sort") ?? "newest";
-  const sizes = searchParams.get("sizes");
-  const colors = searchParams.get("colors");
-  const minPrice = searchParams.get("minPrice");
-  const maxPrice = searchParams.get("maxPrice");
-  const requestedPage = Number(searchParams.get("page") ?? "1");
-  const pageNumber = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const sizesParam = searchParams.get("sizes");
+  const colorsParam = searchParams.get("colors");
+  const minPriceParam = searchParams.get("minPrice");
+  const maxPriceParam = searchParams.get("maxPrice");
 
-  const updateFilters = (values: {
-    sizes: string[] | null;
-    colors: string[] | null;
-    minPrice: number | null;
-    maxPrice: number | null;
-  }) => {
+  const filterValues: FilterValues = useMemo(
+    () => ({
+      sizes: sizesParam ? sizesParam.split(",") : null,
+      colors: colorsParam ? colorsParam.split(",") : null,
+      minPrice: minPriceParam ? Number(minPriceParam) : null,
+      maxPrice: maxPriceParam ? Number(maxPriceParam) : null,
+    }),
+    [sizesParam, colorsParam, minPriceParam, maxPriceParam],
+  );
+
+  const updateFilters = (values: FilterValues) => {
     const next = new URLSearchParams(searchParams);
     if (values.sizes?.length) next.set("sizes", values.sizes.join(","));
     else next.delete("sizes");
     if (values.colors?.length) next.set("colors", values.colors.join(","));
     else next.delete("colors");
-    if (values.minPrice != null) next.set("minPrice", String(values.minPrice));
+    if (values.minPrice != null && Number.isFinite(values.minPrice)) next.set("minPrice", String(values.minPrice));
     else next.delete("minPrice");
-    if (values.maxPrice != null) next.set("maxPrice", String(values.maxPrice));
+    if (values.maxPrice != null && Number.isFinite(values.maxPrice)) next.set("maxPrice", String(values.maxPrice));
     else next.delete("maxPrice");
-    next.delete("page");
     setSearchParams(next);
   };
 
   const onSortChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("sort", value);
-    next.delete("page");
     setSearchParams(next);
   };
 
-  const {
-    data: products,
-    isPending,
-    isError,
-    isFetching,
-    refetch,
-  } = useProducts(
-    {
-      categoryId: effectiveCategoryId,
-      search: search ?? undefined,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      sizes: sizes ? sizes.split(",") : undefined,
-      colors: colors ? colors.split(",") : undefined,
-      sortBy: sort === "price-low-high" || sort === "price-high-low" ? "price" : undefined,
-      descending: sort === "price-high-low",
-      pageNumber,
-      pageSize: 12,
-    },
-    Boolean(isAllProducts ? hasSearch || true : categoryId),
-  );
+  const enabled = isAllProducts || Boolean(categoryId);
 
-  const [accumulatedProducts, setAccumulatedProducts] = useState<Product[]>([]);
-
-  const productsKey = [categorySlug, search, sort, sizes, colors, minPrice, maxPrice].join("|");
-  const [previousProductsKey, setPreviousProductsKey] = useState(productsKey);
-
-  useEffect(() => {
-    if (!products?.items) return;
-
-    startTransition(() => {
-      setAccumulatedProducts((previousProducts) => {
-        const currentItems = products.items ?? [];
-        if (productsKey !== previousProductsKey || products.pageNumber <= 1) return currentItems;
-
-        const seen = new Set(previousProducts.map((product) => product.id));
-        const fresh = currentItems.filter((product) => !seen.has(product.id));
-        return [...previousProducts, ...fresh];
-      });
-      setPreviousProductsKey(productsKey);
-    });
-  }, [products, productsKey, previousProductsKey]);
-
-  if (categoriesPending && !isAllProducts) return <ProductsSkeleton />;
-
-  if (categoriesError && !isAllProducts)
-    return (
-      <ErrorState
-        label="Error 503 / Categories unavailable"
-        message="We could not determine this collection. Please try again in a moment."
-        onRetry={refetchCategories}
-      />
+  const { data, isPending, isError, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+    useInfiniteProducts(
+      {
+        categoryId: effectiveCategoryId,
+        search,
+        minPrice: minPriceParam ? Number(minPriceParam) : undefined,
+        maxPrice: maxPriceParam ? Number(maxPriceParam) : undefined,
+        sizes: sizesParam ? sizesParam.split(",") : undefined,
+        colors: colorsParam ? colorsParam.split(",") : undefined,
+        sortBy: sort === "price-low-high" || sort === "price-high-low" ? "price" : undefined,
+        descending: sort === "price-high-low",
+        pageSize: PAGE_SIZE,
+      },
+      enabled,
     );
 
-  if (!isAllProducts && !categoryId)
-    return <EmptyState title="Collection not found" message="The requested collection does not exist." />;
+  const pages = data?.pages ?? [];
+  const products = pages.flatMap((page) => page.items ?? []);
+  const totalCount = pages[pages.length - 1]?.totalCount ?? products.length;
+  // Backend stops us at MAX_PAGES even if more pages exist server-side.
+  const hasReachedCap = !hasNextPage && pages.length >= MAX_PAGES && totalCount > products.length;
+  const showSkeleton = isPending && products.length === 0;
 
-  const showSkeleton = isPending && accumulatedProducts.length === 0;
-  const displayedProducts = accumulatedProducts.length > 0 ? accumulatedProducts : (products?.items ?? []);
-  const totalPages = products?.totalPages ?? 1;
-  const filteredProductsCount = products?.totalCount ?? displayedProducts.length;
+  // Resolve the results column separately so the <Filters> sidebar can be
+  // rendered unconditionally. It used to be skipped by three early returns,
+  // which unmounted the sidebar and silently discarded the user's selection
+  // whenever categories were still loading or failing.
+  let results: ReactNode;
+  if (categoriesError && !isAllProducts) {
+    results = (
+      <div className="grow flex items-center justify-center">
+        <ErrorState
+          label="Error 503 / Categories unavailable"
+          message="We could not determine this collection. Please try again in a moment."
+          onRetry={refetchCategories}
+        />
+      </div>
+    );
+  } else if (!isAllProducts && !categoryId) {
+    results = (
+      <div className="grow flex items-center justify-center">
+        <EmptyState title="Collection not found" message="The requested collection does not exist." />
+      </div>
+    );
+  } else if ((categoriesPending || showSkeleton) && products.length === 0) {
+    results = <ProductsSkeleton />;
+  } else if (isError) {
+    results = (
+      <div className="grow flex items-center justify-center">
+        <ErrorState
+          label="Error 503 / Products unavailable"
+          message="We could not load the latest products. Please try again in a moment."
+          onRetry={refetch}
+        />
+      </div>
+    );
+  } else {
+    results = (
+      <Products
+        products={products}
+        productsCount={totalCount}
+        sort={sort}
+        onSortChange={onSortChange}
+        onShowMore={() => fetchNextPage()}
+        isLoadingMore={isFetchingNextPage}
+        hasNextPage={hasNextPage}
+        hasReachedCap={hasReachedCap}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-80px)]">
-      <Filter
-        key={`${sizes ?? ""}-${colors ?? ""}-${minPrice ?? ""}-${maxPrice ?? ""}`}
-        initialValues={{
-          sizes: sizes ? sizes.split(",") : null,
-          colors: colors ? colors.split(",") : null,
-          minPrice: minPrice ? Number(minPrice) : null,
-          maxPrice: maxPrice ? Number(maxPrice) : null,
-        }}
-        onApply={updateFilters}
-      />
-      {showSkeleton ? (
-        <ProductsSkeleton />
-      ) : isError ? (
-        <div className="grow flex items-center justify-center">
-          <ErrorState
-            label="Error 503 / Products unavailable"
-            message="We could not load the latest products. Please try again in a moment."
-            onRetry={refetch}
-          />
-        </div>
-      ) : (
-        <Products
-          products={displayedProducts}
-          productsCount={filteredProductsCount}
-          currentPage={pageNumber}
-          totalPages={totalPages}
-          sort={sort}
-          onSortChange={onSortChange}
-          onShowMore={() => {
-            const next = new URLSearchParams(searchParams);
-            next.set("page", String(pageNumber + 1));
-            setSearchParams(next);
-          }}
-          isLoadingMore={isFetching}
-        />
-      )}
+      {/* Always mounted, so applied filters survive "Show More", refetches and
+          loading/error states. "Show More" only extends the query cache and
+          never rewrites the URL, so the applied filters stay in place. */}
+      <Filters values={filterValues} onApply={updateFilters} />
+      {results}
     </div>
   );
 }

@@ -4,7 +4,11 @@ export interface LoginRequest {
 }
 
 export interface GoogleRegisterRequest {
-  phoneNumber: string | null;
+  PhoneNumber: string;
+  IdToken: string;
+}
+
+export interface GoogleLoginRequest {
   IdToken: string;
 }
 

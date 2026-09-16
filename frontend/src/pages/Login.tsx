@@ -2,8 +2,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import type { FieldValues } from "react-hook-form";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-import { useGoogleRegister, useLogin } from "../features/auth/hooks";
+import { useGoogleLogin, useLogin } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import { gmailRules, passwordRules } from "../lib/validation";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function Login() {
   });
 
   const { mutate: loginUser, isPending, error: loginError } = useLogin();
-  const { mutate: googleLogin, isPending: isGooglePending, error: googleLoginError } = useGoogleRegister();
+  const { mutate: googleLogin, isPending: isGooglePending, error: googleLoginError } = useGoogleLogin();
 
   const onSubmit = (data: FieldValues) => {
     loginUser(
@@ -38,7 +39,7 @@ export default function Login() {
     }
 
     googleLogin(
-      { phoneNumber: null, IdToken: credential },
+      { IdToken: credential },
       {
         onSuccess: () => {
           navigate(from, { replace: true });
@@ -76,10 +77,7 @@ export default function Login() {
                 id="email"
                 placeholder="HELLO@GMAIL.COM"
                 type="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: { value: /^[a-zA-Z0-9._%+-]+@gmail\.com$/, message: "Must be a valid @gmail.com address" },
-                })}
+                {...register("email", gmailRules())}
               />
               {errors.email && (
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">
@@ -96,14 +94,7 @@ export default function Login() {
                 id="password"
                 placeholder="••••••••"
                 type="password"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: { value: 6, message: "Must be at least 6 characters long" },
-                  pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/,
-                    message: "Must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
-                  },
-                })}
+                {...register("password", passwordRules())}
               />
               {errors.password && (
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">

@@ -1,5 +1,5 @@
 import { useState, useRef, type KeyboardEvent, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useVerifyEmail, useResendCode } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
 
@@ -17,15 +17,25 @@ export default function VerifyEmail() {
   const { mutate: verify, isPending: isVerifying, error: verifyError } = useVerifyEmail();
   const { mutate: resend, isPending: isResending } = useResendCode();
 
+  // Single ticking timer for the whole page lifetime. Using `[]`-style deps
+  // (here `[email]`) avoids tearing down and recreating the interval on every
+  // tick, and the functional update keeps it correct without depending on
+  // `timeLeft` itself.
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (!email) return;
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [email]);
+
+  // A direct visit (or a refresh, which drops router state) has no email to
+  // verify, so send the user to registration instead of running a dead form.
+  if (!email) {
+    return <Navigate to="/auth/register" replace />;
+  }
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useCart } from "../../features/carts/hooks/useCart";
-import type { Product, Variant } from "../../features/products/types/Product";
+import type { Variant } from "../../features/products/types/Product";
 
 export default function ProductActions({
   variantId,
@@ -10,7 +10,7 @@ export default function ProductActions({
   disabled,
   selectedColor,
   selectedSize,
-  product,
+  productId,
   selectedVariant,
 }: {
   variantId?: string;
@@ -18,7 +18,7 @@ export default function ProductActions({
   disabled?: boolean;
   selectedColor?: string;
   selectedSize?: string;
-  product?: Product;
+  productId?: string;
   selectedVariant?: Variant;
 }) {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ export default function ProductActions({
     }
 
     if (!selectedColor || !selectedSize || !variantId || disabled) {
-      setError("u need to choose color and size");
+      setError("Please choose a color and size first");
       return;
     }
 
@@ -57,7 +57,7 @@ export default function ProductActions({
     }
 
     if (!selectedColor || !selectedSize || !variantId || !selectedVariant) {
-      setError("u need to choose color and size");
+      setError("Please choose a color and size first");
       return;
     }
 
@@ -68,19 +68,14 @@ export default function ProductActions({
 
     setError(null);
 
-    const mainImage = product?.images?.find((img) => img.isMain) || product?.images?.[0];
-
+    // Checkout re-derives names/prices from the catalog API — state carries ids only.
     navigate("/checkout", {
       state: {
         origin: "BuyNow",
         buyNowItem: {
+          productId,
           variantId,
           quantity,
-          name: product?.name ?? "Selected Item",
-          price: product ? product.basePrice - (product.discount ?? 0) : 0,
-          color: selectedColor,
-          size: selectedSize,
-          imageUrl: mainImage?.imageUrl ?? "",
         },
       },
     });

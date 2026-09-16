@@ -7,7 +7,7 @@ export interface CartContextType {
   error: string | null;
   addToCart: (variantId: string, quantity: number) => Promise<void>;
   removeFromCart: (cartItemId: string) => Promise<void>;
-  updateQuantity: (cartItemId: string, delta: number) => void;
+  updateQuantity: (cartItemId: string, delta: number) => Promise<void>;
   clearCart: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;

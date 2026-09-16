@@ -1,9 +1,17 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
-import type { FieldValues } from "react-hook-form";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useGoogleRegister, useRegister } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import { digitsOnly, gmailRules, nameRules, passwordRules, phoneRules } from "../lib/validation";
+
+export interface RegisterFormValues {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  password: string;
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -18,7 +26,7 @@ export default function Register() {
     setError,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<RegisterFormValues>({
     mode: "onChange",
   });
 
@@ -26,7 +34,7 @@ export default function Register() {
   const { mutate: registerWithGoogle, isPending: isGooglePending, error: googleError } = useGoogleRegister();
   const phoneNumber = useWatch({ control, name: "phone" });
 
-  const onSubmit = (data: FieldValues) => {
+  const onSubmit = (data: RegisterFormValues) => {
     registerUser(
       {
         firstName: data.firstName,
@@ -55,7 +63,7 @@ export default function Register() {
     }
 
     registerWithGoogle(
-      { phoneNumber, IdToken: credential },
+      { PhoneNumber: phoneNumber, IdToken: credential },
       {
         onSuccess: () => {
           navigate(redirectPath, { replace: true });
@@ -97,10 +105,7 @@ export default function Register() {
                   id="firstName"
                   placeholder="JOHN"
                   type="text"
-                  {...register("firstName", {
-                    required: "First name is required",
-                    pattern: { value: /^[A-Za-z\s]+$/, message: "Must contain only characters and spaces" },
-                  })}
+                  {...register("firstName", nameRules("First name"))}
                 />
                 {errors.firstName && (
                   <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">
@@ -117,10 +122,7 @@ export default function Register() {
                   id="lastName"
                   placeholder="DOE"
                   type="text"
-                  {...register("lastName", {
-                    required: "Last name is required",
-                    pattern: { value: /^[A-Za-z\s]+$/, message: "Must contain only characters and spaces" },
-                  })}
+                  {...register("lastName", nameRules("Last name"))}
                 />
                 {errors.lastName && (
                   <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">
@@ -140,12 +142,9 @@ export default function Register() {
                 type="tel"
                 maxLength={10}
                 onInput={(e) => {
-                  e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "");
+                  e.currentTarget.value = digitsOnly(e.currentTarget.value);
                 }}
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: { value: /^\d{10}$/, message: "Must be exactly 10 digits" },
-                })}
+                {...register("phone", phoneRules())}
               />
               {errors.phone && (
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">
@@ -162,10 +161,7 @@ export default function Register() {
                 id="email"
                 placeholder="HELLO@GMAIL.COM"
                 type="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: { value: /^[a-zA-Z0-9._%+-]+@gmail\.com$/, message: "Must be a valid @gmail.com address" },
-                })}
+                {...register("email", gmailRules())}
               />
               {errors.email && (
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">
@@ -185,14 +181,7 @@ export default function Register() {
                 id="password"
                 placeholder="••••••••"
                 type="password"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: { value: 6, message: "Must be at least 6 characters long" },
-                  pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/,
-                    message: "Must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
-                  },
-                })}
+                {...register("password", passwordRules())}
               />
               {errors.password && (
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">

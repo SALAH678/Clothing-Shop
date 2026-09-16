@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth";
-import * as authApi from "../../auth/api/authApi";
 import * as cartApi from "../api/cartApi";
 import type { CartItem } from "../types/Cart";
 import { CartContext } from "./cartContextValue";
+import { getPrice } from "../../../lib/pricing";
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { accessToken, login } = useAuth();
+  const { accessToken, isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { pathname } = useLocation();
   const loadedToken = useRef<string | null>(null);
   const [items, setItems] = useState<CartItem[]>([]);
@@ -15,16 +15,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getCartTotal = (cartItems: CartItem[]) =>
-    cartItems.reduce((total, item) => {
-      const unitPrice = item.variant.product.basePrice - item.variant.product.discount;
-      return total + unitPrice * item.quantity;
-    }, 0);
-
   const loadCart = useCallback(async () => {
-    if (accessToken === undefined) {
+    // Wait for auth boot to finish; AuthProvider owns the single refresh call.
+    if (authIsLoading || accessToken === undefined) return;
+    if (!isAuthenticated || accessToken === null) {
       setItems([]);
-      setIsLoading(false);
       loadedToken.current = null;
       return;
     }
@@ -32,12 +27,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      if (accessToken === null) {
-        const refreshedSession = await authApi.refresh();
-        login(refreshedSession);
-        return;
-      }
-
       const cart = await cartApi.getCart();
       setItems(cart.items ?? []);
       loadedToken.current = accessToken;
@@ -47,37 +36,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, login]);
+  }, [accessToken, authIsLoading, isAuthenticated]);
 
   useEffect(() => {
     if (pathname.startsWith("/auth/")) return;
-    if (accessToken && loadedToken.current === accessToken) return;
-
-    const run = async () => {
-      await loadCart();
-    };
-    void run();
+    if (!accessToken || loadedToken.current === accessToken) return;
+    void loadCart();
   }, [accessToken, loadCart, pathname]);
 
-  const addToCart = async (variantId: string, quantity: number) => {
+  const addToCart = useCallback(async (variantId: string, quantity: number) => {
     setError(null);
-    if (items.some((item) => item.variant.id === variantId)) {
-      const duplicateMessage = "This product is already in your bag.";
-      setError(duplicateMessage);
-      throw new Error(duplicateMessage);
+    try {
+      // The backend upserts: re-adding a variant increases its quantity rather
+      // than rejecting it, and responds with the full cart.
+      const cart = await cartApi.addCartItem(variantId, quantity);
+      setItems(cart.items ?? []);
+      setIsCartOpen(true);
+    } catch {
+      const message = "Could not add this item to your bag.";
+      setError(message);
+      throw new Error(message);
     }
+  }, []);
 
-    const addedItem = await cartApi.addCartItem(variantId, quantity);
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.variant.id === addedItem.variant.id);
-      return existingItem
-        ? currentItems.map((item) => (item.id === existingItem.id ? addedItem : item))
-        : [...currentItems, addedItem];
-    });
-    setIsCartOpen(true);
-  };
-
-  const removeFromCart = async (cartItemId: string) => {
+  const removeFromCart = useCallback(async (cartItemId: string) => {
     setError(null);
     try {
       await cartApi.removeCartItem(cartItemId);
@@ -85,43 +67,61 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {
       setError("Could not remove this item from your cart.");
     }
-  };
+  }, []);
 
-  const updateQuantity = (cartItemId: string, delta: number) => {
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === cartItemId
-          ? { ...item, quantity: Math.max(1, Math.min(item.variant.stockQuantity, item.quantity + delta)) }
-          : item,
-      ),
-    );
-  };
+  const updateQuantity = useCallback(
+    async (cartItemId: string, delta: number) => {
+      const item = items.find((currentItem) => currentItem.id === cartItemId);
+      if (!item) return;
 
-  const clearCart = () => {
+      const nextQuantity = item.quantity + delta;
+      setError(null);
+
+      try {
+        // No PATCH endpoint exists for quantities, so:
+        //  - increase -> POST with a delta (server increments, one round-trip)
+        //  - decrease -> DELETE + POST with the absolute quantity
+        const cart =
+          delta > 0 && nextQuantity > 0
+            ? await cartApi.addCartItem(item.variant.id, delta)
+            : await cartApi.replaceCartItemQuantity(cartItemId, item.variant.id, nextQuantity);
+
+        setItems(cart.items ?? []);
+      } catch {
+        setError("Could not update the quantity.");
+        // Reconcile with the server instead of silently diverging from it.
+        void loadCart();
+      }
+    },
+    [items, loadCart],
+  );
+
+  // The API exposes no clear-cart endpoint, so this only empties local state.
+  // After a successful checkout the cart is (re)loaded from the server anyway.
+  const clearCart = useCallback(() => {
     setItems([]);
     setError(null);
-  };
+  }, []);
 
-  const cartCount = items.length;
-  const cartTotal = getCartTotal(items);
+  const value = useMemo(() => {
+    const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+    const cartTotal = items.reduce((total, item) => {
+      return total + getPrice(item.variant.product.basePrice, item.variant.product.discount) * item.quantity;
+    }, 0);
+    return {
+      items,
+      isLoading,
+      error,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      isCartOpen,
+      setIsCartOpen,
+      cartCount,
+      cartTotal,
+    };
+  }, [items, isLoading, error, addToCart, removeFromCart, updateQuantity, clearCart, isCartOpen]);
 
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        isLoading,
-        error,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        isCartOpen,
-        setIsCartOpen,
-        cartCount,
-        cartTotal,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

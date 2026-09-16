@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AuthContext } from "./authContext";
 import type { LoginResponse, User } from "../types/LoginResponse";
 import { setAccessToken as setApiAccessToken, setupAuthCallbacks } from "../../../lib/apiClient";
@@ -24,12 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
-    } catch (err) {
-      console.error("Logout error:", err);
+    } catch {
+      // Session already expired server-side; still clear locally.
     } finally {
-      setAccessTokenState(undefined);
+      setAccessTokenState(null);
       setUser(null);
-      setApiAccessToken(undefined);
+      setApiAccessToken(null);
     }
   }, []);
 
@@ -59,11 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data?.accessToken) {
           login(data);
         } else {
-          setToken(undefined);
+          setToken(null);
         }
       } catch {
         // Not logged in yet on fresh visit
-        setToken(undefined);
+        setToken(null);
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -73,21 +73,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [login, setToken]);
 
-  const isAuthenticated = !!accessToken;
-
-  return (
-    <AuthContext.Provider
-      value={{
-        accessToken,
-        user,
-        isAuthenticated,
-        isLoading,
-        setToken,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      accessToken,
+      user,
+      isAuthenticated: accessToken !== undefined && accessToken !== null,
+      isLoading,
+      setToken,
+      login,
+      logout,
+    }),
+    [accessToken, user, isLoading, setToken, login, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

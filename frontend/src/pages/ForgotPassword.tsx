@@ -20,15 +20,8 @@ export default function ForgotPassword() {
   const { mutate: resetUserPassword, isPending: isResetting, error: resetError } = useResetPassword();
   const { mutate: resend, isPending: isResending } = useResendCode();
 
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+  // Single countdown driver — the reset-step effect below owns the interval.
+  // (Previously two effects each ran setInterval, doubling the tick speed.)
 
   const {
     register: reqRegister,
@@ -50,7 +43,7 @@ export default function ForgotPassword() {
     if (step !== "reset" || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);

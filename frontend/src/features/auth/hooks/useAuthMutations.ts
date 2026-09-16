@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as authApi from "../api/authApi";
 import { useAuth } from "./useAuth";
 import type {
+  GoogleLoginRequest,
   GoogleRegisterRequest,
   LoginRequest,
   RegisterRequest,
@@ -28,6 +29,19 @@ export function useGoogleRegister() {
 
   return useMutation({
     mutationFn: (data: GoogleRegisterRequest) => authApi.registerWithGoogle(data),
+    onSuccess: (data) => {
+      login(data);
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "categories" });
+    },
+  });
+}
+
+export function useGoogleLogin() {
+  const { login } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: GoogleLoginRequest) => authApi.loginWithGoogle(data),
     onSuccess: (data) => {
       login(data);
       queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "categories" });

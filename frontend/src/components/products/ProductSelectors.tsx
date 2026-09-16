@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
 import type { Variant } from "../../features/products/types/Product";
+
+export interface SelectionState {
+  variant: Variant | undefined;
+  quantity: number;
+  selectedColor: string;
+  selectedSize: string;
+}
 
 interface ProductSelectorsProps {
   variants: Variant[];
-  onSelectionChange?: (
-    variant: Variant | undefined,
-    quantity: number,
-    selection: { selectedColor: string; selectedSize: string }
-  ) => void;
+  value: SelectionState;
+  onChange: (next: SelectionState) => void;
 }
 
 const colorHexes: Record<string, string> = {
@@ -29,36 +32,40 @@ function getColorHex(color: string) {
   return colorHexes[color.trim().toLowerCase()] ?? "#d1d5db";
 }
 
-export default function ProductSelectors({ variants, onSelectionChange }: ProductSelectorsProps) {
+export default function ProductSelectors({ variants, value, onChange }: ProductSelectorsProps) {
   const colors = [...new Set(variants.map((variant) => variant.color))];
   const sizes = [...new Set(variants.map((variant) => variant.size))];
-  const [selectedColor, setSelectedColor] = useState("");
-  const [selectedSize, setSelectedSize] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const selectedVariant = variants.find((variant) => variant.color === selectedColor && variant.size === selectedSize);
+  const { variant: selectedVariant, quantity, selectedColor, selectedSize } = value;
   const stockQuantity = selectedVariant?.stockQuantity ?? 0;
   const hasStock = stockQuantity > 0;
+  // Allow buying the last unit: only quantities ABOVE stock are an error.
   const quantityError =
     selectedColor && selectedSize && !selectedVariant
       ? "This size and color combination is unavailable."
       : selectedVariant && !hasStock
         ? "This product is out of stock."
-        : selectedVariant && quantity >= stockQuantity
-          ? "This product is out of stock."
+        : selectedVariant && quantity > stockQuantity
+          ? "Only a few items left in stock."
           : null;
 
-  useEffect(() => {
-    onSelectionChange?.(selectedVariant, quantity, { selectedColor, selectedSize });
-  }, [onSelectionChange, quantity, selectedVariant, selectedColor, selectedSize]);
-
   const selectColor = (color: string) => {
-    setSelectedColor((prev) => (prev === color ? "" : color));
-    setQuantity(1);
+    const nextColor = selectedColor === color ? "" : color;
+    const nextVariant = variants.find(
+      (variant) => variant.color === nextColor && variant.size === selectedSize,
+    );
+    onChange({ variant: nextVariant, quantity: 1, selectedColor: nextColor, selectedSize });
   };
 
   const selectSize = (size: string) => {
-    setSelectedSize((prev) => (prev === size ? "" : size));
-    setQuantity(1);
+    const nextSize = selectedSize === size ? "" : size;
+    const nextVariant = variants.find(
+      (variant) => variant.color === selectedColor && variant.size === nextSize,
+    );
+    onChange({ variant: nextVariant, quantity: 1, selectedColor, selectedSize: nextSize });
+  };
+
+  const setQuantity = (next: number) => {
+    onChange({ ...value, quantity: Math.max(1, Math.min(stockQuantity || next, next)) });
   };
 
   return (
@@ -129,7 +136,7 @@ export default function ProductSelectors({ variants, onSelectionChange }: Produc
           <button
             type="button"
             disabled={!hasStock || quantity >= stockQuantity}
-            onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))}
+            onClick={() => setQuantity(quantity + 1)}
             className="w-10 h-full flex justify-center items-center font-mono text-xl font-bold hover:bg-primary hover:text-white transition-colors"
           >
             +

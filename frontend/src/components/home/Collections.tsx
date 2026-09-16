@@ -1,5 +1,7 @@
 import type { Category } from "../../features/categories/types/Category";
 import { Link } from "react-router-dom";
+import { resolveImageUrl } from "../../lib/imageUrl";
+import { createSlug } from "../ui/Slug";
 
 interface CollectionsProps {
   categories: Category[] | undefined;
@@ -13,33 +15,16 @@ export default function Collections({ categories }: CollectionsProps) {
       </div>
     );
 
-  const backEndUrl = import.meta.env.VITE_API_URL ?? "";
-
-  const oversizeTShirtCategory: Category | undefined = categories?.find(
-    (category) => category.categoryName === "T-Shirt Oversize",
-  );
-  const ultraBaggyCategory: Category | undefined = categories?.find(
-    (category) => category.categoryName === "Ultra Baggy",
-  );
-  const shirtsCategory: Category | undefined = categories?.find(
-    (category) => category.categoryName === "Old Money Shirts",
-  );
-  const joggersAndJoggingCategory: Category | undefined = categories?.find(
-    (category) => category.categoryName === "Jogger And Jogging",
-  );
-
-  const collectionCards = [
-    { category: oversizeTShirtCategory, className: "md:col-span-8 h-150", alt: "Oversize T-Shirt" },
-    { category: ultraBaggyCategory, className: "md:col-span-4 h-150", alt: "Ultra Baggy" },
-    { category: shirtsCategory, className: "md:col-span-6 h-125", alt: "Shirts" },
-    { category: joggersAndJoggingCategory, className: "md:col-span-6 h-125", alt: "Joggers and Jogging" },
-  ].filter((card) => card.category?.imageUrl);
-
-  const getImageUrl = (imageUrl: string): string => {
-    if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
-
-    return `${backEndUrl.replace(/\/$/, "")}/${imageUrl.replace(/^\//, "")}`;
+  const featuredLayout: Record<string, string> = {
+    "T-Shirt Oversize": "md:col-span-8 h-150",
+    "Ultra Baggy": "md:col-span-4 h-150",
+    "Old Money Shirts": "md:col-span-6 h-125",
+    "Jogger And Jogging": "md:col-span-6 h-125",
   };
+
+  const collectionCards = Object.keys(featuredLayout)
+    .map((name) => categories.find((category) => category.categoryName === name))
+    .filter((category): category is Category => Boolean(category?.imageUrl));
 
   return (
     <section id="collections" className="py-24 px-6 md:px-16 bg-surface max-w-[1920px] mx-auto">
@@ -56,25 +41,30 @@ export default function Collections({ categories }: CollectionsProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-min">
-        {collectionCards.map(({ category, className, alt }) => (
-          <Link
-            to={`/categories/${category?.categoryName.toLowerCase().replace(/\s+/g, "-")}`}
-            key={category?.id}
-            className={`group relative block ${className} border border-primary overflow-hidden bg-surface-container transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1`}
-          >
-            <img
-              src={getImageUrl(category?.imageUrl ?? "")}
-              alt={alt}
-              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-90" />
-            <div className="absolute bottom-8 left-8">
-              <h3 className="font-display text-2xl md:text-3xl font-bold text-white uppercase mb-2 tracking-tight">
-                {category?.categoryName}
-              </h3>
-            </div>
-          </Link>
-        ))}
+        {collectionCards.map((category) => {
+          const slug = createSlug(category.categoryName);
+          return (
+            <Link
+              to={`/categories/${slug}`}
+              key={category.id}
+              className={`group relative block ${featuredLayout[category.categoryName]} border border-primary overflow-hidden bg-surface-container transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1`}
+            >
+              <img
+                src={resolveImageUrl(category.imageUrl)}
+                alt={category.categoryName}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-90" />
+              <div className="absolute bottom-8 left-8">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white uppercase mb-2 tracking-tight">
+                  {category.categoryName}
+                </h3>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

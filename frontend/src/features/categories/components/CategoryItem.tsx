@@ -1,16 +1,14 @@
 import { type Category } from "../types/Category";
 import { Link } from "react-router-dom";
+import { resolveImageUrl } from "../../../lib/imageUrl";
+import { createSlug } from "../../../components/ui/Slug";
 
 interface CategoryItemProps {
   category: Category;
 }
 
 export default function CategoryItem({ category }: CategoryItemProps) {
-  function createSlug(name: string) {
-    return name.toLowerCase().trim().replace(/\s+/g, "-");
-  }
-
-  const backEndUrl: string = import.meta.env.VITE_API_URL ?? "";
+  const imageUrl = resolveImageUrl(category.imageUrl) ?? ``;
 
   return (
     <Link
@@ -19,11 +17,14 @@ export default function CategoryItem({ category }: CategoryItemProps) {
     >
       <div
         className="absolute inset-0 bg-cover bg-center w-full h-full grayscale contrast-125 transition-all duration-500 ease-cubic-bezier(0.4,0,0.2,1) group-hover:grayscale-0 group-hover:contrast-110 group-hover:scale-105"
-        style={{ backgroundImage: `url("${backEndUrl}${category.imageUrl}")` }}
+        style={{ backgroundImage: `url("${imageUrl}")` }}
       />
       <div className="absolute inset-0 bg-black/50 mix-blend-multiply group-hover:bg-black/30 transition-colors duration-300" />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <h2 className="font-display text-lg md:text-xl font-bold text-white uppercase text-center tracking-widest drop-shadow-lg z-10 relative">
+        <h2
+          className="font-display text-lg md:text-xl font-bold text-white uppercase text-center tracking-widest drop-shadow-lg z-10 relative"
+          title={category.categoryName}
+        >
           {category.categoryName}
         </h2>
       </div>

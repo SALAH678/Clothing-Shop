@@ -1,9 +1,13 @@
 import axios, { type InternalAxiosRequestConfig, AxiosError } from "axios";
 import type { LoginResponse } from "../features/auth/types/LoginResponse";
 
+// Normalize once so we never emit double slashes like `https://api//api`.
+const rawApiUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+
 export const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: `${rawApiUrl}/api`,
   withCredentials: true, // required for refreshToken httpOnly cookie
+  timeout: 15000, // never hang a request forever
 });
 
 // In-memory token management
@@ -68,12 +72,10 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Do not intercept auth refresh or login failures to prevent infinite loops
-    const requestUrl = originalRequest.url || "";
-    if (
-      requestUrl.includes("/auth/refresh") ||
-      requestUrl.includes("/auth/login")
-    ) {
+    // Do not intercept auth refresh or login failures to prevent infinite loops.
+    // Match on the pathname only, so query strings cannot dodge the check.
+    const requestPath = (originalRequest.url || "").split("?")[0];
+    if (requestPath.endsWith("/auth/refresh") || requestPath.endsWith("/auth/login")) {
       return Promise.reject(error);
     }
 

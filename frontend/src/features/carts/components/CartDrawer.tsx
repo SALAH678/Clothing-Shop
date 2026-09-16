@@ -2,20 +2,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { X, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../../auth/hooks/useAuth";
-
-function getImageUrl(imageUrl: string | null) {
-  if (!imageUrl) return undefined;
-  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
-
-  const backEndUrl = import.meta.env.VITE_API_URL ?? "";
-  return `${backEndUrl.replace(/\/$/, "")}/${imageUrl.replace(/^\//, "")}`;
-}
+import { resolveImageUrl } from "../../../lib/imageUrl";
+import { formatPriceDA, getPrice } from "../../../lib/pricing";
 
 export default function CartDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const { items, isLoading, error, isCartOpen, setIsCartOpen, removeFromCart, cartTotal } = useCart();
+  const { items, isLoading, error, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, cartTotal } =
+    useCart();
 
   if (!isCartOpen) return null;
 
@@ -32,15 +27,6 @@ export default function CartDrawer() {
     navigate("/checkout", {
       state: {
         origin: "Cart",
-        cartItems: items.map((item) => ({
-          variantId: item.variant.id,
-          quantity: item.quantity,
-          name: item.variant.product.name,
-          price: item.variant.product.basePrice - item.variant.product.discount,
-          color: item.variant.color,
-          size: item.variant.size,
-          imageUrl: item.variant.product.imageUrl ?? "",
-        })),
       },
     });
   };
@@ -86,11 +72,13 @@ export default function CartDrawer() {
                 className="flex gap-4 p-4 border-2 border-primary bg-white shadow-[4px_4px_0_0_#000] relative group hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-[6px_6px_0_0_#000] transition-all duration-200"
               >
                 <div className="w-20 h-24 bg-surface border-2 border-primary shrink-0 relative overflow-hidden">
-                  {item.variant.product.imageUrl && (
+                  {resolveImageUrl(item.variant.product.imageUrl) && (
                     <img
-                      src={getImageUrl(item.variant.product.imageUrl)}
+                      src={resolveImageUrl(item.variant.product.imageUrl)}
                       alt={item.variant.product.name}
-                      className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   )}
                 </div>
@@ -105,12 +93,36 @@ export default function CartDrawer() {
                       <span>CLR: {item.variant.color}</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="font-mono text-xs font-bold border border-primary px-2 py-0.5 bg-surface">
-                      QTY: {item.quantity}
-                    </span>
+                  <div className="flex items-center justify-between mt-2 gap-2">
+                    {/* Quantity stepper: persists through the cart API, and caps at
+                        stock locally because the API does not enforce it. */}
+                    <div className="flex items-center border border-primary bg-surface shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void updateQuantity(item.id, -1)}
+                        className="w-7 h-7 flex items-center justify-center font-mono text-sm font-bold hover:bg-primary hover:text-white transition-colors"
+                        aria-label={`Decrease quantity of ${item.variant.product.name}`}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 h-7 flex items-center justify-center font-mono text-xs font-bold border-x border-primary">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void updateQuantity(item.id, 1)}
+                        disabled={item.quantity >= item.variant.stockQuantity}
+                        className="w-7 h-7 flex items-center justify-center font-mono text-sm font-bold hover:bg-primary hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-primary transition-colors"
+                        aria-label={`Increase quantity of ${item.variant.product.name}`}
+                      >
+                        +
+                      </button>
+                    </div>
                     <span className="font-mono text-sm font-black">
-                      {(item.variant.product.basePrice - item.variant.product.discount).toLocaleString()} DA
+                      {formatPriceDA(
+                        getPrice(item.variant.product.basePrice, item.variant.product.discount) *
+                          item.quantity,
+                      )}
                     </span>
                   </div>
                 </div>
@@ -136,7 +148,7 @@ export default function CartDrawer() {
           <div className="p-6 border-t-4 border-primary bg-surface shadow-[0_-10px_20px_rgba(0,0,0,0.05)] relative z-10">
             <div className="flex justify-between items-end mb-6 border-b-2 border-dashed border-primary pb-4">
               <span className="font-mono text-sm font-bold uppercase tracking-widest text-secondary">Total Amount</span>
-              <span className="font-display text-3xl font-black">{cartTotal.toLocaleString()} DA</span>
+              <span className="font-display text-3xl font-black">{formatPriceDA(cartTotal)}</span>
             </div>
             <button
               onClick={handleCheckout}
