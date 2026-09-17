@@ -1,10 +1,15 @@
 using FluentValidation;
+using System.Text.RegularExpressions;
 
 namespace Application.Features.Users.Command.CreateUser;
 
 public sealed class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
 {
     private const string NameRegex = "^[a-zA-Z\\s]+$";
+    private static readonly Regex PasswordRegex = new(
+     @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{6,}$",
+     RegexOptions.Compiled
+   );
 
     public CreateUserCommandValidator()
     {
@@ -23,6 +28,10 @@ public sealed class CreateUserCommandValidator : AbstractValidator<CreateUserCom
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Phone number is required.")
             .Matches(@"^0[5-7][0-9]{8}$").WithMessage("Phone number must be a valid Algerian mobile number.");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .Matches(PasswordRegex).WithMessage("Password must be at least 6 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
 
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is required.")

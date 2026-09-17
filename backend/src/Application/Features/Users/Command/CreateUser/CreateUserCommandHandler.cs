@@ -6,6 +6,7 @@ using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
 using Domain.Common.ValueObjects.PhoneNumber;
 using Domain.Users;
+using Domain.Users.Accounts;
 using Domain.Users.Enum;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -50,7 +51,15 @@ public class CreateUserCommandHandler(IUnitOfWork unitOfWork, IMapper mapper,
 
         userResult.Value.MarkEmailVerified();
 
+        var accountResult = Account.Create(userResult.Value.Id, "local", request.Password);
+        if(accountResult.IsError)
+        {
+            _logger.LogWarning("Create user failed: account creation failed for Email: {Email}", request.Email);
+            return accountResult.TopError;
+        }
+
         _unitOfWork.Users.Create(userResult.Value);
+        _unitOfWork.Accounts.Create(accountResult.Value);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

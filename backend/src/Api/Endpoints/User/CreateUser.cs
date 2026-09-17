@@ -26,6 +26,7 @@ public class CreateUser(IMediator mediator) : Endpoint<CreateUserCommand, IResul
                 "Doe",
                 "0123456789",
                 "john.doe@example.com",
+                "Password123!",
                 "Customer | Admin");
             s.Responses[201] = "User created successfully.";
             s.Responses[400] = "User payload is invalid.";
