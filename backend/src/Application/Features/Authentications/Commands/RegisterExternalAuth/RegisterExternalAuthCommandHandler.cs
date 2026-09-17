@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 namespace Application.Features.Authentications.Commands.RegisterExternalAuth;
 
 public class RegisterExternalAuthCommandHandler(IOAuthService oAuthService, IUnitOfWork unitOfWork, ITokenProvider tokenProvider,
-    ITokenHasherService tokenHasherService, IMapper mapper, ILogger<RegisterExternalAuthCommand> logger) : IRequestHandler<RegisterExternalAuthCommand, Result<AuthResponse>>
+    ITokenHasherService tokenHasherService, IMapper mapper, ILogger<RegisterExternalAuthCommandHandler> logger) : IRequestHandler<RegisterExternalAuthCommand, Result<AuthResponse>>
 {
     public async Task<Result<AuthResponse>> Handle(RegisterExternalAuthCommand request, CancellationToken cancellationToken)
     {
