@@ -27,7 +27,7 @@ public class ProductConfiguration : AuditableEntityConfiguration<Product>
 
         builder.Property(product => product.Discount)
             .IsRequired(false)
-            .HasPrecision(5, 2)
+            .HasPrecision(6, 2)
             .HasDefaultValue(null);
 
         builder.Property(product => product.CategoryId)

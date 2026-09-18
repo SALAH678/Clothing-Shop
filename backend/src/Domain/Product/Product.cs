@@ -159,7 +159,7 @@ public class Product : AuditableEntity
         if (basePrice <= 0)
             return ProductErrors.InvalidBasePrice;
 
-        if (discount < 0 || discount > 100)
+        if (discount < 0)
             return ProductErrors.InvalidDiscount;
 
         if (categoryId == Guid.Empty)
