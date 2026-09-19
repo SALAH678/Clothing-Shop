@@ -115,4 +115,7 @@ public static class ApplicationErrors
     public static Error UserAlreadyExists => Error.Conflict(
         code: "User_Already_Exists",
         description: "A user with this email already exists.");
+    public static Error VariantNotFound => Error.NotFound(
+        code: "Variant_Not_Found",
+        description: "The specified variant was not found.");
 }
