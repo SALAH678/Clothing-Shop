@@ -38,8 +38,9 @@
     <Folder Include="Features\Products\Commands\UpdateProduct\" />
     <Folder Include="Features\Products\Dtos\" />
     <Folder Include="Features\Products\Queries\GetProductById\" />
+    <Folder Include="Features\Purchases\Mappers\" />
     <Folder Include="Features\Users\Command\CreateUser\" />
-    <Folder Include="Features\Variants\Commands\" />
+    <Folder Include="Features\Variants\Commands\DeleteVariant\" />
     <Folder Include="Features\Variants\Mappers\" />
     <Folder Include="Features\Variants\Queries\" />
   </ItemGroup>

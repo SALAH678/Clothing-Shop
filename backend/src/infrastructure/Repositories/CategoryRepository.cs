@@ -21,4 +21,7 @@ public sealed class CategoryRepository(AppDbContext context) : Repository<Catego
         .Include(c => c.Subcategories)
         .AsNoTracking()
         .ToListAsync(ct);
+
+    public async Task<int> GetTotalCategoriesNumberAsync(CancellationToken cancellationToken = default) =>
+        await _Context.Categories.CountAsync(cancellationToken);
 }

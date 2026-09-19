@@ -101,4 +101,7 @@ public sealed class ProductRepository(AppDbContext context) : Repository<Product
 
         return result;
     }
+
+    public async Task<int> GetTotalProductsNumberAsync(CancellationToken cancellationToken = default) =>
+        await _Context.Products.CountAsync(cancellationToken);
 }

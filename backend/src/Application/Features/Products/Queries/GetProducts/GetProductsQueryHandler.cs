@@ -4,11 +4,12 @@ using Application.Features.Products.Dtos;
 using AutoMapper;
 using Domain.Common.Results;
 using MediatR;
-
 using Microsoft.Extensions.Logging;
+
 namespace Application.Features.Products.Queries.GetProducts;
 
-public class GetProductsQueryHandler(IUnitOfWork unitOfWork, IMapper mapper, ILogger<GetProductsQueryHandler> logger, IUser user) : IRequestHandler<GetProductsQuery, Result<PaginatedList<ProductDto>>>
+public class GetProductsQueryHandler(IUnitOfWork unitOfWork, IMapper mapper, ILogger<GetProductsQueryHandler> logger, IUser user)
+    : IRequestHandler<GetProductsQuery, Result<PaginatedList<ProductDto>>>
 {
     private readonly ILogger<GetProductsQueryHandler> _logger = logger;
     private readonly IUser _user = user;
