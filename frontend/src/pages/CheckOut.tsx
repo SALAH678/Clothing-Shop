@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { useCart } from "../features/carts/hooks/useCart";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { createPurchase, type CreatePurchaseRequest } from "../features/purchases/api/purchaseApi";
@@ -39,9 +39,7 @@ export default function Checkout() {
 
   // Re-derive Buy Now display data from the catalog so a refresh, direct URL,
   // or tampered location.state can never change names/prices.
-  const { data: buyNowProduct, isPending: buyNowPending } = useProduct(
-    isBuyNow ? buyNowItem?.productId : undefined,
-  );
+  const { data: buyNowProduct, isPending: buyNowPending } = useProduct(isBuyNow ? buyNowItem?.productId : undefined);
 
   const {
     register,
@@ -103,7 +101,9 @@ export default function Checkout() {
     );
   }
 
-  const onSubmit = async (data: CheckoutFormData) => {
+  const onSubmit: SubmitHandler<CheckoutFormData> = async (data) => {
+    if (isSubmitting) return;
+
     if (displayedItems.length === 0) {
       setSubmissionError("There are no items in your order.");
       return;
@@ -147,7 +147,8 @@ export default function Checkout() {
         navigate("/checkout/success");
       }
     } catch (err: unknown) {
-      const responseData = (err as { response?: { data?: { error?: string; detail?: string; message?: string } } })?.response?.data;
+      const responseData = (err as { response?: { data?: { error?: string; detail?: string; message?: string } } })
+        ?.response?.data;
       const errorMsg =
         responseData?.detail ||
         responseData?.error ||
@@ -410,13 +411,13 @@ export default function Checkout() {
             <button
               form="checkout-form"
               type="submit"
-              disabled={displayedItems.length === 0 || isSubmitting || (isBuyNow && buyNowPending) || (!isBuyNow && cartLoading)}
+              disabled={
+                displayedItems.length === 0 || isSubmitting || (isBuyNow && buyNowPending) || (!isBuyNow && cartLoading)
+              }
               aria-busy={isSubmitting}
               className="mt-4 w-full bg-primary text-white font-mono text-lg font-black p-5 border-2 border-primary hover:bg-white hover:text-primary transition-all duration-300 uppercase flex justify-between items-center group shadow-[8px_8px_0_0_#000] hover:shadow-[4px_4px_0_0_#000] hover:translate-x-1 hover:translate-y-1 active:translate-x-2 active:translate-y-2 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <span className="tracking-widest">
-                {isSubmitting ? "PROCESSING..." : "COMPLETE ORDER"}
-              </span>
+              <span className="tracking-widest">{isSubmitting ? "PROCESSING..." : "COMPLETE ORDER"}</span>
               <ArrowRight className="w-6 h-6 transform group-hover:translate-x-2 transition-transform" />
             </button>
             <p className="text-center font-mono text-[10px] sm:text-xs font-bold text-secondary uppercase mt-2">

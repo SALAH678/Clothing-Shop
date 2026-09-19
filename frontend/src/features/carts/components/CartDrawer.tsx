@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import { X, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -9,12 +10,14 @@ export default function CartDrawer() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const { items, isLoading, error, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, cartTotal } =
-    useCart();
+  const checkoutStarted = useRef(false);
+  const { items, isLoading, error, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, cartTotal } = useCart();
 
   if (!isCartOpen) return null;
 
   const handleCheckout = () => {
+    if (checkoutStarted.current) return;
+
     setIsCartOpen(false);
 
     if (!isAuthenticated) {
@@ -24,6 +27,7 @@ export default function CartDrawer() {
 
     if (items.length === 0) return;
 
+    checkoutStarted.current = true;
     navigate("/checkout", {
       state: {
         origin: "Cart",
@@ -120,8 +124,7 @@ export default function CartDrawer() {
                     </div>
                     <span className="font-mono text-sm font-black">
                       {formatPriceDA(
-                        getPrice(item.variant.product.basePrice, item.variant.product.discount) *
-                          item.quantity,
+                        getPrice(item.variant.product.basePrice, item.variant.product.discount) * item.quantity,
                       )}
                     </span>
                   </div>
@@ -152,9 +155,10 @@ export default function CartDrawer() {
             </div>
             <button
               onClick={handleCheckout}
+              disabled={checkoutStarted.current}
               className="w-full bg-primary text-white font-mono text-lg uppercase py-5 px-6 border-2 border-primary tracking-widest font-black transition-all duration-300 ease-out hover:-translate-y-2 hover:-translate-x-1 shadow-[4px_4px_0_0_#000] hover:shadow-[8px_8px_0_0_#000] hover:bg-white hover:text-black active:translate-y-0 active:translate-x-0 active:shadow-none cursor-pointer"
             >
-              PROCEED TO CHECKOUT
+              {checkoutStarted.current ? "OPENING CHECKOUT..." : "PROCEED TO CHECKOUT"}
             </button>
           </div>
         )}

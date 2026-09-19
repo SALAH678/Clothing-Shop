@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useCart } from "../../features/carts/hooks/useCart";
@@ -26,6 +26,7 @@ export default function ProductActions({
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
+  const buyNowStarted = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAddToBag = async () => {
@@ -51,6 +52,8 @@ export default function ProductActions({
   };
 
   const handleBuyNow = () => {
+    if (buyNowStarted.current) return;
+
     if (!isAuthenticated) {
       navigate("/auth/login", { state: { from: location } });
       return;
@@ -67,6 +70,7 @@ export default function ProductActions({
     }
 
     setError(null);
+    buyNowStarted.current = true;
 
     // Checkout re-derives names/prices from the catalog API — state carries ids only.
     navigate("/checkout", {
@@ -107,6 +111,7 @@ export default function ProductActions({
       </button>
       <button
         type="button"
+        disabled={buyNowStarted.current}
         onClick={handleBuyNow}
         className="w-full py-4 border-2 border-primary bg-transparent text-primary font-mono text-lg font-black tracking-widest uppercase hover:bg-primary hover:text-white transition-all duration-200 flex justify-center items-center gap-2 hover:shadow-[4px_4px_0_0_#000] active:shadow-none active:translate-x-1 active:translate-y-1"
       >
@@ -122,7 +127,7 @@ export default function ProductActions({
         >
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
-        BUY NOW
+        {buyNowStarted.current ? "OPENING CHECKOUT..." : "BUY NOW"}
       </button>
       {error && (
         <p className="text-red-600 font-mono text-xs font-bold uppercase" role="alert">
