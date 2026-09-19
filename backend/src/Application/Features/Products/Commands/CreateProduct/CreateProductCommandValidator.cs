@@ -24,7 +24,7 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
             .GreaterThan(0).WithMessage("Base price must be greater than zero.");
 
         RuleFor(x => x.Discount)
-            .InclusiveBetween(0m, 100m)
+            .InclusiveBetween(0m, 10000m)
             .WithMessage("Discount must be between 0 and 100.")
             .When(x => x.Discount.HasValue);
 

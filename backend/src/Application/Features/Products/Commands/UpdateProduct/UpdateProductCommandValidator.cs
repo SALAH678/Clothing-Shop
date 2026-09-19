@@ -22,12 +22,10 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
             .When(x => x.Description is not null);
 
         RuleFor(x => x.BasePrice)
-            .GreaterThan(0).WithMessage("Base price must be greater than zero.")
-            .When(x => x.BasePrice.HasValue);
+            .GreaterThan(0).WithMessage("Base price must be greater than zero.");
 
         RuleFor(x => x.Discount)
-            .InclusiveBetween(0m, 100m)
-            .WithMessage("Discount must be between 0 and 100.")
-            .When(x => x.Discount.HasValue);
+            .InclusiveBetween(0m, 10000m)
+            .WithMessage("Discount must be between 0 and 10000.");
     }
 }

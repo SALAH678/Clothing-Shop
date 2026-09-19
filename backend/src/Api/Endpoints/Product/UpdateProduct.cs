@@ -26,7 +26,8 @@ public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, 
                 "Updated T-Shirt",
                 "Updated description for the product",
                 59.99m,
-                10m);
+                10m,
+                Guid.Parse("11111111-1111-1111-1111-111111111111"));
             s.Responses[200] = "Product updated successfully.";
             s.Responses[400] = "Product update payload is invalid.";
             s.Responses[500] = "Product update failed.";

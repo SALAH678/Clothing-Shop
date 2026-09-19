@@ -8,5 +8,6 @@ public sealed record UpdateProductCommand(
     Guid ProductId,
     string? Name,
     string? Description,
-    decimal? BasePrice,
-    decimal? Discount) : IRequest<Result<ProductDto>>;
+    decimal BasePrice,
+    decimal Discount,
+    Guid CategoryId) : IRequest<Result<ProductDto>>;

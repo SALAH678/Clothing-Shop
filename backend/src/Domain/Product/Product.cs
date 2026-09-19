@@ -54,7 +54,7 @@ public class Product : AuditableEntity
             return error.Value;
 
         Name = name!.Trim();
-        Description = description!.Trim();
+        Description = description?.Trim();
         BasePrice = basePrice;
         Discount = discount;
         CategoryId = categoryId;

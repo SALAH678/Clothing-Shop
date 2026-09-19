@@ -17,7 +17,7 @@ public sealed class PurchaseRepository(AppDbContext context) : Repository<Purcha
             {
                 PurchaseId = p.Id,
                 CustomerName = p.User.FirstName + " " + p.User.LastName,
-                CustomerPhoneNumber = p.CustomerPhone.ToString(),
+                CustomerPhoneNumber = p.CustomerPhone.Value,
                 Wilaya = p.CustomerAddress.Wilaya,
                 City = p.CustomerAddress.City,
                 Street = p.CustomerAddress.Street,
