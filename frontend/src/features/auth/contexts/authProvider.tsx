@@ -3,6 +3,7 @@ import { AuthContext } from "./authContext";
 import type { LoginResponse, User } from "../types/LoginResponse";
 import { setAccessToken as setApiAccessToken, setupAuthCallbacks } from "../../../lib/apiClient";
 import * as authApi from "../api/authApi";
+import { getRoleFromAccessToken, type AuthRole } from "../utils/jwt";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null | undefined>(undefined);
@@ -73,17 +74,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [login, setToken]);
 
+  // Prefer the role from the user object; fall back to decoding the access
+  // token's role claim so it still works if the user object is missing.
+  const role = useMemo<AuthRole | null>(() => {
+    if (user?.Role === "Admin" || user?.Role === "Customer") return user.Role;
+    return getRoleFromAccessToken(accessToken);
+  }, [user, accessToken]);
+
   const value = useMemo(
     () => ({
       accessToken,
       user,
       isAuthenticated: accessToken !== undefined && accessToken !== null,
       isLoading,
+      role,
+      isAdmin: role === "Admin",
       setToken,
       login,
       logout,
     }),
-    [accessToken, user, isLoading, setToken, login, logout],
+    [accessToken, user, isLoading, role, setToken, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

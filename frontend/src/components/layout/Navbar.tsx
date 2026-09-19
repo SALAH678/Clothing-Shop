@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShoppingCart, User } from "lucide-react";
+import { Search, ShoppingCart, User, Settings } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useCart } from "../../features/carts/hooks/useCart";
@@ -13,7 +13,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const { cartCount, setIsCartOpen } = useCart();
   const { data: categories } = useCategories();
 
@@ -107,6 +107,14 @@ export default function Navbar() {
               className="absolute right-0 w-0 opacity-0 group-hover:w-32 group-hover:opacity-100 group-hover:border-primary focus:w-32 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-xs py-1 pr-8 outline-none z-0 cursor-text"
             />
           </form>
+          {isAdmin && (
+            <Link to="/admin" aria-label="Admin settings">
+              <Settings className="w-6 h-6 hover:scale-110 active:scale-95 transition-transform cursor-pointer" />
+            </Link>
+          )}
+          <Link to="/profile">
+            <User className="w-6 h-6 hover:scale-110 active:scale-95 transition-transform cursor-pointer" />
+          </Link>
           <button type="button" onClick={handleCartClick} className="relative" aria-label="Open cart">
             <ShoppingCart className="w-6 h-6 hover:opacity-70 transition-opacity cursor-pointer" />
             {isAuthenticated && cartCount > 0 && (
@@ -115,9 +123,6 @@ export default function Navbar() {
               </span>
             )}
           </button>
-          <Link to="/profile">
-            <User className="w-6 h-6 hover:scale-110 active:scale-95 transition-transform cursor-pointer" />
-          </Link>
         </div>
       </div>
       <nav className="hidden md:flex gap-2 md:gap-3 lg:gap-6 items-center flex-nowrap justify-center flex-1 min-w-0">
@@ -160,6 +165,11 @@ export default function Navbar() {
             className="absolute right-0 w-0 opacity-0 group-hover:w-35 lg:group-hover:w-50 group-hover:opacity-100 group-hover:border-primary focus:w-35 lg:focus:w-50 focus:opacity-100 focus:border-primary transition-all duration-300 ease-out bg-surface border-b-2 border-transparent font-mono text-[10px] lg:text-xs py-1 pr-6 lg:pr-8 outline-none z-0 cursor-text"
           />
         </form>
+        {isAdmin && (
+          <Link to="/admin" aria-label="Admin settings">
+            <Settings className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
+          </Link>
+        )}
         <Link to="/profile">
           <User className="w-4 h-4 lg:w-5 lg:h-5 hover:scale-110 transition-transform cursor-pointer" />
         </Link>

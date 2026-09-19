@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import Home from "../pages/Home";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "../features/auth/components/ProtectedRoute";
+import AdminRoute from "../features/auth/components/AdminRoute";
 import EmptyState from "../components/ui/EmptyState";
 import PageLoader from "../components/ui/PageLoader";
 
@@ -19,6 +20,7 @@ const Profile = lazy(() => import("../pages/Profile"));
 const Checkout = lazy(() => import("../pages/CheckOut"));
 const CheckoutSuccess = lazy(() => import("../pages/CheckOutSuccess"));
 const CheckoutFailed = lazy(() => import("../pages/CheckOutFailed"));
+const AdminDashboard = lazy(() => import("../pages/AdminDashboard"));
 
 export default function AppRoutes() {
   return (
@@ -68,6 +70,21 @@ export default function AppRoutes() {
         />
         <Route element={<MainLayout />}>
           <Route path="/profile" element={<Profile />} />
+        </Route>
+      </Route>
+
+      {/* Admin-only area: ProtectedRoute handles auth (session restore + login
+          redirect), AdminRoute enforces the Admin role on top of it. */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminRoute />}>
+          <Route
+            path="/admin"
+            element={
+              <Suspense fallback={<PageLoader label="Loading admin panel" />}>
+                <AdminDashboard />
+              </Suspense>
+            }
+          />
         </Route>
       </Route>
 
