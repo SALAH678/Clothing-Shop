@@ -2,7 +2,21 @@ import type { PaginatedList } from "../../products/types/Product";
 
 export type { PaginatedList };
 
-export type AdminTab = "overview" | "users" | "products" | "categories" | "purchases";
+/**
+ * Canonical admin tabs. This array is the single source of truth for the
+ * `/admin/:tab` route segment, the sidebar links and the `AdminTab` union,
+ * so adding a tab in one place keeps routing and navigation in sync.
+ */
+export const ADMIN_TABS = ["overview", "users", "products", "categories", "purchases"] as const;
+
+export type AdminTab = (typeof ADMIN_TABS)[number];
+
+/** Narrows the raw `:tab` route param to a known tab. */
+export const isAdminTab = (value: string | undefined): value is AdminTab =>
+  value !== undefined && (ADMIN_TABS as readonly string[]).includes(value);
+
+/** Builds the canonical URL for a tab, e.g. `/admin/users`. */
+export const adminTabPath = (tab: AdminTab) => `/admin/${tab}`;
 
 /** Shape of GET /api/dashboard/overview (backend OverviewDto). */
 export interface DashboardOverviewStats {

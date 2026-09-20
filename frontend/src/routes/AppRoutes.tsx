@@ -22,6 +22,13 @@ const CheckoutSuccess = lazy(() => import("../pages/CheckOutSuccess"));
 const CheckoutFailed = lazy(() => import("../pages/CheckOutFailed"));
 const AdminDashboard = lazy(() => import("../pages/AdminDashboard"));
 
+/** Shared route element for `/admin` and `/admin/:tab`. */
+const AdminPanel = () => (
+  <Suspense fallback={<PageLoader label="Loading admin panel" />}>
+    <AdminDashboard />
+  </Suspense>
+);
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -74,17 +81,13 @@ export default function AppRoutes() {
       </Route>
 
       {/* Admin-only area: ProtectedRoute handles auth (session restore + login
-          redirect), AdminRoute enforces the Admin role on top of it. */}
+          redirect), AdminRoute enforces the Admin role on top of it.
+          Every tab owns a real URL (`/admin/overview`, `/admin/users`, …) so
+          the panel is deep-linkable and a refresh reopens the same tab. */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminRoute />}>
-          <Route
-            path="/admin"
-            element={
-              <Suspense fallback={<PageLoader label="Loading admin panel" />}>
-                <AdminDashboard />
-              </Suspense>
-            }
-          />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/:tab" element={<AdminPanel />} />
         </Route>
       </Route>
 

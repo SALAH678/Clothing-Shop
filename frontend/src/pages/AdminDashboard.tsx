@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { LayoutDashboard, Users, Package, Tags, ShoppingBag } from 'lucide-react';
+import React from 'react';
+import { Link, Navigate, useParams } from 'react-router-dom';
+import { LayoutDashboard, Users, Package, Tags, ShoppingBag, Home } from 'lucide-react';
 import { AdminOverview } from '../features/admin/components/AdminOverview';
 import { AdminUsers } from '../features/admin/components/AdminUsers';
 import { AdminProducts } from '../features/admin/components/AdminProducts';
@@ -7,7 +8,7 @@ import { AdminCategories } from '../features/admin/components/AdminCategories';
 import { AdminPurchases } from '../features/admin/components/AdminPurchases';
 
 export type { AdminTab } from '../features/admin/types/admin';
-import type { AdminTab } from '../features/admin/types/admin';
+import { adminTabPath, isAdminTab, type AdminTab } from '../features/admin/types/admin';
 
 const navItems: { id: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -18,7 +19,15 @@ const navItems: { id: AdminTab; label: string; icon: React.ComponentType<{ class
 ];
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  // The active tab lives in the URL (`/admin/:tab`) so tabs are deep-linkable,
+  // survive a refresh and work with the browser back/forward buttons.
+  const { tab } = useParams<{ tab: string }>();
+
+  // `/admin` with no segment (and any unknown segment) falls back to the
+  // canonical overview URL instead of rendering an empty panel.
+  if (!isAdminTab(tab)) return <Navigate to={adminTabPath('overview')} replace />;
+
+  const activeTab = tab;
 
   const activeLabel =
     activeTab === 'overview'
@@ -37,9 +46,10 @@ export default function AdminDashboard() {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                to={adminTabPath(item.id)}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-4 py-3 font-mono font-bold uppercase transition-all duration-300 border-2 whitespace-nowrap ${
                   isActive
                     ? 'bg-primary text-white border-primary translate-x-1 translate-y-1 shadow-none'
@@ -48,7 +58,7 @@ export default function AdminDashboard() {
               >
                 <Icon className="w-5 h-5 shrink-0" />
                 <span>{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -58,10 +68,17 @@ export default function AdminDashboard() {
       <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-10 overflow-y-auto">
         <div className="w-full">
           {/* Header */}
-          <div className="mb-8 border-b-4 border-primary pb-4">
+          <div className="mb-8 border-b-4 border-primary pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h1 className="font-display text-4xl font-black uppercase tracking-tighter">
               {activeLabel}
             </h1>
+            <Link
+              to="/"
+              title="Back to the storefront"
+              className="bg-surface text-primary font-mono text-xs font-bold uppercase py-2.5 px-4 border-2 border-primary flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto whitespace-nowrap shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white transition-all cursor-pointer"
+            >
+              <Home className="w-4 h-4" /> Back to Home
+            </Link>
           </div>
 
           {/* TAB CONTENT */}
