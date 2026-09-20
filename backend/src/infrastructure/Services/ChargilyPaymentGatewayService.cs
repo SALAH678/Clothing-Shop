@@ -27,7 +27,6 @@ public sealed class ChargilyPaymentGatewayService(IChargilyPayClient client, IOp
             WebhookEndpointUrl = new Uri(_options.WebhookEndpointUrl),
             OnSuccessRedirectUrl = new Uri($"{_options.SuccessRedirectBaseUrl}?purchaseId={purchaseId}"),
             OnFailureRedirectUrl = new Uri($"{_options.FailureRedirectBaseUrl}?purchaseId={purchaseId}"),
-            //Metadata = new Dictionary<string, string> { ["purchaseId"] = purchaseId.ToString() }
             Metadata = [purchaseId.ToString()]
         };
 
