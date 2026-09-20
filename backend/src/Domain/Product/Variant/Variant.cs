@@ -40,8 +40,14 @@ public class Variant : AuditableEntity
         if (error is not null)
             return error.Value;
 
+        //BR
+        if(!ValidSizes.Contains(size!.Trim().ToLowerInvariant()))
+            return VariantErrors.InvalidSize;
+
         return new Variant(productId, size!.Trim(), color!.Trim(), stockQuantity);
     }
+
+    private static readonly HashSet<string> ValidSizes = new() { "s", "m", "l", "xl", "xxl", "xxxl" };
 
     public Result<Updated> Update(string? size, string? color, int stockQuantity)
     {
@@ -49,6 +55,10 @@ public class Variant : AuditableEntity
 
         if (error is not null)
             return error.Value;
+
+        //BR
+        if (!ValidSizes.Contains(size!.Trim().ToLowerInvariant()))
+            return VariantErrors.InvalidSize;
 
         Size = size!.Trim();
         Color = color!.Trim();

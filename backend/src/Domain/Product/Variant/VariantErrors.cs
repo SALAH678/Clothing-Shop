@@ -10,4 +10,5 @@ public static class VariantErrors
     public static Error ColorRequired => Error.Validation(code: "Variant_Color_Required", description: "Variant color is required.");
     public static Error InvalidStockQuantity => Error.Validation(code: "Variant_Invalid_Stock_Quantity", description: "Stock quantity cannot be negative.");
     public static Error InsufficientStock => Error.Validation(code: "Variant_Insufficient_Stock", description: "Stock quantity is not enough.");
+    public static Error InvalidSize => Error.Validation(code: "Variant_Invalid_Size", description: "Size must be one of the following: s, m, l, xl, xxl, xxxl.");
 }

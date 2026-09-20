@@ -43,6 +43,10 @@ public class Product : AuditableEntity
         if (error is not null)
             return error.Value;
 
+        //BR
+        if(discount > 10000m)
+            return ProductErrors.DiscountShouldNotExceedOneMilyen;
+
         return new Product(name!.Trim(), description!.Trim(), basePrice, discount, categoryId);
     }
 
@@ -52,6 +56,10 @@ public class Product : AuditableEntity
 
         if (error is not null)
             return error.Value;
+
+        //BR
+        if (discount > 10000m)
+            return ProductErrors.DiscountShouldNotExceedOneMilyen;
 
         Name = name!.Trim();
         Description = description?.Trim();
@@ -159,7 +167,7 @@ public class Product : AuditableEntity
         if (basePrice <= 0)
             return ProductErrors.InvalidBasePrice;
 
-        if (discount < 0)
+        if (discount < 0 && discount <= basePrice)
             return ProductErrors.InvalidDiscount;
 
         if (categoryId == Guid.Empty)

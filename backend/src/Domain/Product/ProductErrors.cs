@@ -13,4 +13,5 @@ public static class ProductErrors
     public static Error VariantAlreadyExists => Error.Conflict(code: "Product_Variant_Already_Exists", description: "Product variant already exists.");
     public static Error VariantNotFound => Error.NotFound(code: "Product_Variant_Not_Found", description: "Product variant was not found.");
     public static Error ImageNotFound => Error.NotFound(code: "Product_Image_Not_Found", description: "Product image was not found.");
+    public static Error DiscountShouldNotExceedOneMilyen => Error.Validation(code: "Product_Discount_Should_Not_Exceed_One_Milyen", description: "Discount should not exceed one milyen.");
 }

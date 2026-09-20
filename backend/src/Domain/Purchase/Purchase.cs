@@ -40,7 +40,7 @@ public class Purchase : AuditableEntity
 
     public static Result<Purchase> Create(Guid userId, PhoneNumber customerPhone, Address customerAddress, PurchaseOrigin origin)
     {
-        Error? error = Validate(userId, customerPhone, customerAddress);
+        Error? error = Validate(userId, customerPhone, customerAddress, origin);
 
         if (error is not null)
             return error.Value;
@@ -144,7 +144,7 @@ public class Purchase : AuditableEntity
         TotalAmount = _items.Sum(item => item.Quantity * item.UnitPrice);
     }
 
-    private static Error? Validate(Guid userId, PhoneNumber customerPhone, Address customerAddress)
+    private static Error? Validate(Guid userId, PhoneNumber customerPhone, Address customerAddress, PurchaseOrigin? origin = null)
     {
         if (userId == Guid.Empty)
             return PurchaseErrors.UserIdRequired;
@@ -154,6 +154,9 @@ public class Purchase : AuditableEntity
 
         if (customerAddress is null)
             return PurchaseErrors.CustomerAddressRequired;
+
+        if (origin is not null && !System.Enum.IsDefined<PurchaseOrigin>(origin.Value))
+            return PurchaseErrors.InvalidOrigin;
 
         return null;
     }
