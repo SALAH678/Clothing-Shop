@@ -16,6 +16,7 @@ public class AssignSubCategoriesToCategory(IMediator mediator) : Endpoint<Assign
         Put("/{categoryId:guid}/subcategories");
         Group<CategoryGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

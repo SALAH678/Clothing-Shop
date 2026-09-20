@@ -17,6 +17,10 @@ public class CreateCategory(IMediator mediator) : Endpoint<CreateCategoryRequest
         Group<CategoryGroup>();
         Roles("Admin");
         AllowFileUploads();
+        Options(x => x
+            .RequireRateLimiting("admin-write")
+            .RequireRateLimiting("upload-concurrency")
+        );
 
         Summary(s =>
         {

@@ -15,6 +15,7 @@ public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, IRes
         Post("/verify-email");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-email-strict"));
 
         Summary(s =>
         {

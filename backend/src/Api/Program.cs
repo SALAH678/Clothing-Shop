@@ -41,6 +41,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseTickerQ();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.UseChargilyPayWebhookValidation();

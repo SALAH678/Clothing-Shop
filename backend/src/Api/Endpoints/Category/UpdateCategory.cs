@@ -18,6 +18,10 @@ public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryRequest
         Group<CategoryGroup>();
         Roles("Admin");
         AllowFileUploads();
+        Options(x => x
+            .RequireRateLimiting("admin-write")
+            .RequireRateLimiting("upload-concurrency")
+        );
 
         Summary(s =>
         {

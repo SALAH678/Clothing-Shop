@@ -15,6 +15,7 @@ public class LogOut(IMediator mediator) : EndpointWithoutRequest<IResult>
         Post("/logout");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("standard"));
 
         Summary(s =>
         {

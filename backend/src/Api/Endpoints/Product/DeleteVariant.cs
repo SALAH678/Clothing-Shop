@@ -16,6 +16,7 @@ public class DeleteVariant(IMediator mediator) : Endpoint<DeleteVariantCommand, 
         Delete("/variants/{variantId:guid}");
         Group<ProductGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

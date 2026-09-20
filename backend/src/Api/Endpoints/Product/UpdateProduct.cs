@@ -16,6 +16,7 @@ public class UpdateProduct(IMediator mediator) : Endpoint<UpdateProductCommand, 
         Put("/{productId:guid}");
         Group<ProductGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

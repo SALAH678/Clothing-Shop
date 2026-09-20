@@ -15,6 +15,7 @@ public class Register(IMediator mediator) : Endpoint<RegisterCommand, IResult> /
         Post("/register");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-ip-create"));
         //DontAutoSendResponse();
 
         Summary(s =>

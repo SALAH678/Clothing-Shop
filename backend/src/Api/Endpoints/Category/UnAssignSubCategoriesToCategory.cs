@@ -16,6 +16,7 @@ public class UnAssignSubCategoriesToCategory(IMediator mediator) : Endpoint<UnAs
         Delete("/{categoryId:guid}/subcategories");
         Group<CategoryGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

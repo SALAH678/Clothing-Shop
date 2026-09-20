@@ -16,6 +16,7 @@ public class GetCurrentUserProfile(IMediator mediator) : EndpointWithoutRequest<
         Get("/current");
         Group<UserGroup>();
         Roles("Admin", "Customer");
+        Options(x => x.RequireRateLimiting("admin-read"));
 
         Summary(s =>
         {

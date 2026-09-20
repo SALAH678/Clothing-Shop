@@ -20,6 +20,10 @@ public class CreateProduct(IMediator mediator) : Endpoint<CreateProductRequest, 
         Group<ProductGroup>();
         Roles("Admin");
         AllowFileUploads();
+        Options(x => x
+            .RequireRateLimiting("admin-write")
+            .RequireRateLimiting("upload-concurrency")
+        );
 
         Summary(s =>
         {

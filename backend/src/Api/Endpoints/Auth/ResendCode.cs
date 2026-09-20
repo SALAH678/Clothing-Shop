@@ -14,6 +14,7 @@ public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, IResul
         Post("/resend-code");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-target-strict"));
 
         Summary(s =>
         {

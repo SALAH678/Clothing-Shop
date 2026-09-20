@@ -17,6 +17,7 @@ public class GetProducts(IMediator mediator) : Endpoint<GetProductsRequest, IRes
         Get("");
         Group<ProductGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("standard"));
 
         Summary(s =>
         {

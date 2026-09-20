@@ -13,6 +13,7 @@ public class GetAllPurchases(IMediator mediator) : Endpoint<GetPurchasesQuery, P
         Get("");
         Group<PurchaseGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-read"));
 
         Summary(s =>
         {

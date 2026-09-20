@@ -15,6 +15,7 @@ public class RemoveCartItem(IMediator mediator) : Endpoint<RemoveCartItemCommand
         Delete("/items/{CartItemId:guid}");
         Group<CartGroup>();
         Roles("Admin", "Customer");
+        Options(x => x.RequireRateLimiting("cart-write"));
 
         Summary(s =>
         {

@@ -16,6 +16,7 @@ public class DeleteProduct(IMediator mediator) : Endpoint<DeleteProductCommand, 
         Delete("/{productId:guid}");
         Group<ProductGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

@@ -16,6 +16,7 @@ public class CreateVariant(IMediator mediator) : Endpoint<CreateVariantCommand, 
         Post("{productId:guid}/variants");
         Group<ProductGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

@@ -14,6 +14,7 @@ public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand
         Post("/forgot-password");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-target-strict"));
 
         Summary(s =>
         {

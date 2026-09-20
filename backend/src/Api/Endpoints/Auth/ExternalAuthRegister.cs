@@ -14,6 +14,7 @@ public class ExternalAuthRegister(IMediator mediator) : Endpoint<RegisterExterna
         Post("/google/register");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-ip-relaxed"));
 
         Summary(s =>
         {

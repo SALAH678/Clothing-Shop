@@ -17,6 +17,7 @@ public class GetAllUsers(IMediator mediator) : Endpoint<GetAllUsersQuery, IResul
         Get("");
         Group<UserGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-read"));
 
         Summary(s =>
         {

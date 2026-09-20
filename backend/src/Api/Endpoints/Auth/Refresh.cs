@@ -15,6 +15,7 @@ public class Refresh(IMediator mediator) : EndpointWithoutRequest<IResult>
         Post("/refresh");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-ip-relaxed"));
 
         Summary(s =>
         {

@@ -15,6 +15,7 @@ public class CreatePurchase(IMediator mediator) : Endpoint<CreatePurchaseRequest
         Post("");
         Group<PurchaseGroup>();
         Roles("Admin", "Customer");
+        Options(x => x.RequireRateLimiting("purchase-strict"));
 
         Summary(s =>
         {

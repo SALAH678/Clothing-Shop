@@ -16,6 +16,7 @@ public class UpdateVariant(IMediator mediator) : Endpoint<UpdateVariantCommand, 
         Put("/variants/{variantId:guid}");
         Group<ProductGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

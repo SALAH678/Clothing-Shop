@@ -14,6 +14,7 @@ public class ExternalAuthLogin(IMediator mediator) : Endpoint<LogInExternalAuthC
         Post("/google/login");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-ip-relaxed"));
 
         Summary(s =>
         {

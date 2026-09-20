@@ -14,6 +14,7 @@ public class RetryPurchase(IMediator mediator) : Endpoint<RetryPurchaseCommand, 
         Post("retry/{purchaseId:guid}");
         Group<PurchaseGroup>();
         Roles("Admin", "Customer");
+        Options(x => x.RequireRateLimiting("purchase-strict"));
 
         Summary(s =>
         {

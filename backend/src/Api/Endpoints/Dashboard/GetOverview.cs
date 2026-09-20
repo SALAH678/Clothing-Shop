@@ -12,6 +12,7 @@ public class GetOverview(IMediator mediator) : EndpointWithoutRequest<OverviewDt
         Get("overview");
         Group<DashboardGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-read"));
 
         Summary(s =>
         {

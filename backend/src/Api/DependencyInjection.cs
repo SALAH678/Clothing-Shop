@@ -1,5 +1,4 @@
-﻿using Api.Endpoints.Purchase;
-using Api.Services;
+﻿using Api.Services;
 using Application.Common.Interfaces;
 using Asp.Versioning;
 using Chargily.Pay.AspNet;
@@ -7,6 +6,7 @@ using FastEndpoints;
 using FastEndpoints.AspVersioning;
 using FastEndpoints.Swagger;
 using Serilog;
+using System.Threading.RateLimiting;
 using TickerQ.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -72,6 +72,84 @@ public static class DependencyInjection
                       .AllowAnyMethod()
                       .AllowCredentials();
             });
+        });
+
+        static string GetClientIp(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        static string GetEmailKey(HttpContext ctx) => ctx.Request.Query["email"].FirstOrDefault() ?? GetClientIp(ctx);
+        static string GetUserId(HttpContext ctx) => ctx.User.FindFirst("sub")?.Value ?? GetClientIp(ctx);
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddPolicy("standard", context =>
+                 RateLimitPartition.GetSlidingWindowLimiter(
+                     partitionKey: GetClientIp(context),
+                     factory: _ => new SlidingWindowRateLimiterOptions
+                     {
+                         PermitLimit = 100,
+                         Window = TimeSpan.FromMinutes(1),
+                         SegmentsPerWindow = 4,
+                         QueueLimit = 0
+                     }
+                 )
+            );
+
+            // Register — tightest IP limit, each request is costly (account + email)
+            options.AddPolicy("auth-ip-create", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetClientIp(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            // ExternalAuthLogin, ExternalAuthRegister, Refresh — cost/DoS only, no guessing risk
+            options.AddPolicy("auth-ip-relaxed", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetClientIp(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            // LogIn's IP leg — spray-attack guard, stacked with the email-based leg below
+            options.AddPolicy("auth-ip-spray-guard", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetClientIp(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            // LogIn, ResetPassword, VerifyEmail — email-partitioned, guards against credential/code guessing
+            options.AddPolicy("auth-email-strict", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            // ForgotPassword, ResendCode — target-partitioned, guards against inbox/SMS bombing
+            options.AddPolicy("auth-target-strict", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 3, Window = TimeSpan.FromMinutes(15), SegmentsPerWindow = 3, QueueLimit = 0 }));
+
+            options.AddPolicy("cart-read", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            options.AddPolicy("cart-write", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            options.AddPolicy("admin-read", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            options.AddPolicy("admin-write", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
+            options.AddPolicy("purchase-strict", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
+                    _ => new SlidingWindowRateLimiterOptions
+                    { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+
         });
 
         return services;

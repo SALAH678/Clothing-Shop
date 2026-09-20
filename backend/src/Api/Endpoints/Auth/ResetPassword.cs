@@ -14,6 +14,7 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
         Post("/reset-password");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("auth-email-strict"));
 
         Summary(s =>
         {

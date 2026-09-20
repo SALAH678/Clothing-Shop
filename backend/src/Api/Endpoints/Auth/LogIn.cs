@@ -18,6 +18,10 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
         Post("/login");
         Group<AuthGroup>();
         AllowAnonymous();
+        Options(x => x
+            .RequireRateLimiting("auth-ip-spray-guard")
+            .RequireRateLimiting("auth-email-strict")
+        );
 
         Summary(s =>
         {

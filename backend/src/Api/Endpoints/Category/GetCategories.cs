@@ -17,6 +17,7 @@ public class GetCategories(IMediator mediator) : EndpointWithoutRequest<IResult>
         Get("");
         Group<CategoryGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("standard"));
 
         Summary(s =>
         {

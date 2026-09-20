@@ -16,6 +16,7 @@ public class GetProductById(IMediator mediator) : Endpoint<GetProductByIdQuery, 
         Get("/{productId:guid}");
         Group<ProductGroup>();
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("standard"));
 
         Summary(s =>
         {

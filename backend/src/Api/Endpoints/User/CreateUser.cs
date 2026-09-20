@@ -16,6 +16,7 @@ public class CreateUser(IMediator mediator) : Endpoint<CreateUserCommand, IResul
         Post("");
         Group<UserGroup>();
         Roles("Admin");
+        Options(x => x.RequireRateLimiting("admin-write"));
 
         Summary(s =>
         {

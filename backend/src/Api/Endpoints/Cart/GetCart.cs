@@ -15,6 +15,7 @@ public class GetCart(IMediator mediator) : EndpointWithoutRequest<IResult>
         Get("");
         Group<CartGroup>();
         Roles("Admin", "Customer");
+        Options(x => x.RequireRateLimiting("cart-read"));
 
         Summary(s =>
         {
