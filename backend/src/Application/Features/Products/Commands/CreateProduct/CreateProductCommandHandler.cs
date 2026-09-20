@@ -99,15 +99,19 @@ public class CreateProductCommandHandler(IUnitOfWork unitOfWork, IImageService i
 
             return _mapper.Map<ProductDto>(createProductResult.Value);
         }
+        catch (OperationCanceledException)
+        {
+            await DeleteImagesAsync(savedImageUrls, cancellationToken);
+            _logger.LogWarning("Create product cancelled for ProductName: {ProductName}, UserId: {UserId}",
+                request.Name, _user.UserId);
+            throw;
+        }
         catch (Exception ex)
         {
             await DeleteImagesAsync(savedImageUrls, cancellationToken);
-
             _logger.LogError(ex, "Create product failed: unable to save changes for ProductName: {ProductName}, Email: {Email}, UserId: {UserId}",
                 request.Name, _user.Email, _user.UserId);
-            return Error.Failure(
-                code: "Product_Creation_Failed",
-                description: "Product creation failed.");
+            throw;
         }
     }
     private async Task DeleteImagesAsync(IEnumerable<string> imageUrls, CancellationToken cancellationToken)

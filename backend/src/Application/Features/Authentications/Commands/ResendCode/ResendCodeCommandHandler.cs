@@ -71,15 +71,7 @@ public class ResendCodeCommandHandler(IUnitOfWork unitOfWork, ICodeGenerator cod
 
         _unitOfWork.VerificationTokens.Create(verificationTokenResult.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ResendCode failed: unable to save verification token for Email: {Email}", request.Email);
-            return ApplicationErrors.ResendVerificationCodeFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         try
         {

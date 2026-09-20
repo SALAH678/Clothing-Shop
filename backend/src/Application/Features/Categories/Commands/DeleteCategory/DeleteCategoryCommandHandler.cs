@@ -38,18 +38,9 @@ public class DeleteCategoryCommandHandler(IUnitOfWork unitOfWork,
 
         _unitOfWork.Categories.Delete(category);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Delete category failed: unable to save changes for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
-                request.categoryId, _user.Email, _user.UserId);
-            return ApplicationErrors.CategoryDeletFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if(!string.IsNullOrEmpty(category.ImageUrl))
+        if (!string.IsNullOrEmpty(category.ImageUrl))
         {
             try
             {

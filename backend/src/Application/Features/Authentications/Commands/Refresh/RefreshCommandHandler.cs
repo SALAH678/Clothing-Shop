@@ -93,15 +93,7 @@ public class RefreshCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, IToke
 
         _unitOfWork.RefreshTokens.Create(refreshTokenResult.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Refresh failed: unable to save new refresh token for Email: {Email}, UserId: {UserId}", user.Email.Value, user.Id);
-            return ApplicationErrors.RefreshFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Token refresh successful for Email: {Email}, UserId: {UserId}", user.Email.Value, user.Id);
 

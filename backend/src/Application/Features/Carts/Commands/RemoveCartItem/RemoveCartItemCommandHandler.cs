@@ -43,16 +43,7 @@ public class RemoveCartItemCommandHandler(IUnitOfWork unitOfWork,
 
         _unitOfWork.CartItems.Delete(cartItem);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Remove cart item failed: unable to save changes for CartItemId: {CartItemId}, Email: {Email}, UserId: {UserId}",
-                request.CartItemId, _user.Email, _user.UserId);
-            return ApplicationErrors.CartOperationFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Cart item removed successfully for CartItemId: {CartItemId}, Email: {Email}, UserId: {UserId}",
             request.CartItemId, _user.Email, _user.UserId);

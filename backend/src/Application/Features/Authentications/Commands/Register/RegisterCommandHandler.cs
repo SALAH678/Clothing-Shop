@@ -77,15 +77,7 @@ public class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordService pas
         _unitOfWork.Accounts.Create(account.Value);
         _unitOfWork.VerificationTokens.Create(verificationTokenResult.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Registration failed: unable to save user data for Email: {Email}, UserId: {UserId}", request.Email, user.Value.Id);
-            return ApplicationErrors.RegistrationFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         try
         {

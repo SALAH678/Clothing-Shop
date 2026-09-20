@@ -60,21 +60,12 @@ namespace Application.Features.Categories.Commands.UnAssignSubCategoriesToCatego
                 }
             }
 
-            try
-            {
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Subcategories unassigned successfully for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
-                    request.CategoryId, _user.Email, _user.UserId);
+            _logger.LogInformation("Subcategories unassigned successfully for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
+                request.CategoryId, _user.Email, _user.UserId);
 
-                return Result.Success;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unassign subcategories failed: unable to save changes for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
-                    request.CategoryId, _user.Email, _user.UserId);
-                return ApplicationErrors.AssignFailed;
-            }
+            return Result.Success;
         }
     }
 }

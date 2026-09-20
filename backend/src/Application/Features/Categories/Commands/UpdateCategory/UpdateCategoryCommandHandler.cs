@@ -71,30 +71,42 @@ public class UpdateCategoryCommandHandler(IUnitOfWork unitOfWork, IImageService 
         try
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            await CleanupNewImageAsync(imageUrl, category.ImageUrl, CancellationToken.None);
 
-            _logger.LogInformation("Category updated successfully for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
-                request.categoryId, _user.Email, _user.UserId);
-
-            return _mapper.Map<CategoryDto>(category); // because updatedCategory is a updated type and when execute 
-            // category.update and category is a reference type bz is a class type so is modified directly in memory
+            _logger.LogWarning("Update category cancelled for CategoryId: {CategoryId}, UserId: {UserId}",
+                request.categoryId, _user.UserId);
+            throw;
         }
         catch (Exception ex)
         {
-            if (!string.IsNullOrWhiteSpace(imageUrl) && imageUrl != category.ImageUrl)
-            {
-                try
-                {
-                    await _imageService.DeleteAsync(imageUrl, cancellationToken);
-                }
-                catch
-                {
-                    await _imageCleanupJob.ScheduleAsync([imageUrl], cancellationToken);
-                }
-            }
+            await CleanupNewImageAsync(imageUrl, category.ImageUrl, cancellationToken);
 
             _logger.LogError(ex, "Update category failed: unable to save changes for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
                 request.categoryId, _user.Email, _user.UserId);
-            return ApplicationErrors.CategoryUpdateFailed;
+            throw;
+        }
+
+        _logger.LogInformation("Category updated successfully for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",
+            request.categoryId, _user.Email, _user.UserId);
+
+        return _mapper.Map<CategoryDto>(category);
+    }
+
+    private async Task CleanupNewImageAsync(string? newImageUrl, string? currentImageUrl, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(newImageUrl) || newImageUrl == currentImageUrl)
+            return;
+
+        try
+        {
+            await _imageService.DeleteAsync(newImageUrl, cancellationToken);
+        }
+        catch
+        {
+            await _imageCleanupJob.ScheduleAsync([newImageUrl], cancellationToken);
         }
     }
 }

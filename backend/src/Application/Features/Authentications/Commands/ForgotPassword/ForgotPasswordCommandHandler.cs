@@ -45,15 +45,7 @@ public class ForgotPasswordCommandHandler(IUnitOfWork unitOfWork,
 
         _unitOfWork.VerificationTokens.Create(verificationTokenResult.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ForgotPassword failed: unable to save verification token for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
-            return ApplicationErrors.ForgotPasswordFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         try
         {

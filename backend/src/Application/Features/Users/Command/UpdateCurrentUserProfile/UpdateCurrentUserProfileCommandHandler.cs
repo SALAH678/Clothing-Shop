@@ -54,15 +54,7 @@ public class UpdateCurrentUserProfileCommandHandler(IUnitOfWork unitOfWork,
             return updatedUser.TopError;
         }
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Update current user profile failed: unable to save changes for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
-            return ApplicationErrors.UpdateUserFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Current user profile updated successfully for Email: {Email}, UserId: {UserId}", _user.Email, _user.UserId);
 

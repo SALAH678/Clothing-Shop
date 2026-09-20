@@ -108,15 +108,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,
             
         _unitOfWork.RefreshTokens.Create(newRefreshToken.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Login failed: unable to save refresh token for UserId: {UserId}", user.Id);
-            return ApplicationErrors.LoginFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Login successful for UserId: {UserId}", user.Id);
 

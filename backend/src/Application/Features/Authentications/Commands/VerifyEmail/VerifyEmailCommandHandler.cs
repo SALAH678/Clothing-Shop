@@ -79,15 +79,7 @@ public sealed class VerifyEmailCommandHandler(IUnitOfWork unitOfWork,
 
         _unitOfWork.RefreshTokens.Create(newRefreshToken.Value);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "VerifyEmail failed: unable to save refresh token after verification for Email: {Email}", request.Email);
-            return ApplicationErrors.VerificationFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Email verification successful for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
 

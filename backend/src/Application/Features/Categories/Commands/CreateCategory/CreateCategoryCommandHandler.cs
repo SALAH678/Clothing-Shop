@@ -60,6 +60,15 @@ public class CreateCategoryCommandHandler(IUnitOfWork unitOfWork, IImageService 
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+        catch (OperationCanceledException)
+        {
+            if (imageUrl is not null)
+                await TryDeleteImageAsync(imageUrl, cancellationToken);
+
+            _logger.LogWarning("Create category cancelled for CategoryName: {CategoryName}, UserId: {UserId}",
+                request.CategoryName, _user.UserId);
+            throw;
+        }
         catch (Exception ex)
         {
             if (imageUrl is not null)
@@ -67,7 +76,7 @@ public class CreateCategoryCommandHandler(IUnitOfWork unitOfWork, IImageService 
 
             _logger.LogError(ex, "Create category failed: unable to save changes for CategoryName: {CategoryName}, Email: {Email}, UserId: {UserId}",
                 request.CategoryName, _user.Email, _user.UserId);
-            return ApplicationErrors.CategoryCreationFailed;
+            throw;
         }
 
         _logger.LogInformation("Category created successfully for CategoryId: {CategoryId}, Email: {Email}, UserId: {UserId}",

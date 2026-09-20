@@ -31,22 +31,11 @@ public class DeleteProductCommandHandler(IUnitOfWork unitOfWork, ILogger<DeleteP
 
         _unitOfWork.Products.Delete(product);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Product deleted successfully for ProductId: {ProductId}, Email: {Email}, UserId: {UserId}",
-                request.ProductId, _user.Email, _user.UserId);
+        _logger.LogInformation("Product deleted successfully for ProductId: {ProductId}, Email: {Email}, UserId: {UserId}",
+            request.ProductId, _user.Email, _user.UserId);
 
-            return Result.Deleted;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Delete product failed: unable to save changes for ProductId: {ProductId}, Email: {Email}, UserId: {UserId}",
-                request.ProductId, _user.Email, _user.UserId);
-            return Error.Failure(
-                code: "Product_Delete_Failed",
-                description: "Product delete failed.");
-        }
+        return Result.Deleted;
     }
 }

@@ -40,16 +40,7 @@ public class AddCartItemCommandHandler(IUnitOfWork unitOfWork,
             return addItemResult.Errors;
         }
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Add cart item failed: unable to save changes for VariantId: {VariantId}, Email: {Email}, UserId: {UserId}",
-                request.VariantId, _user.Email, _user.UserId);
-            return ApplicationErrors.CartOperationFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Cart item added successfully for VariantId: {VariantId}, CartId: {CartId}, Email: {Email}, UserId: {UserId}",
             request.VariantId, cart.Id, _user.Email, _user.UserId);

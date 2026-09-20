@@ -69,15 +69,7 @@ public sealed class ResetPasswordCommandHandler(IUnitOfWork unitOfWork, IPasswor
                 return revokeResult.TopError;
         }
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ResetPassword failed: unable to save password change for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
-            return ApplicationErrors.PasswordResetFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Password reset successful for Email: {Email}, UserId: {UserId}", request.Email, user.Id);
 

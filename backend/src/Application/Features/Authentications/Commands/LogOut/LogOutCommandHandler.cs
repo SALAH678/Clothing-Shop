@@ -39,15 +39,7 @@ public class LogOutCommandHandler(IUnitOfWork unitOfWork,
 
         refreshTokenInDb.Revoke();
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,"Logout failed: unable to revoke refresh token for UserId: {UserId}", refreshTokenInDb.UserId);
-            return ApplicationErrors.LogOutFailed;
-        }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Logout successful for UserId: {UserId}", refreshTokenInDb.UserId);
 
