@@ -33,13 +33,35 @@ export async function getPurchases(
   return response.data;
 }
 
-/** GET /api/products — paginated products with no filters and no category. */
+/** Optional filters for the admin products table (server-side supported). */
+export interface AdminProductFilters {
+  /** Case-insensitive match on the product name. */
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  /** Only "price" is supported by the API; omit for date (newest/oldest) ordering. */
+  sortBy?: string;
+  /** With sortBy: false = ascending, true = descending. Without sortBy: true = newest first, false = oldest first. */
+  descending: boolean;
+}
+
+/** GET /api/products — paginated products with optional search / price / sort filters. */
 export async function getAdminProducts(
   pageNumber = 1,
-  pageSize = ADMIN_PAGE_SIZE
+  pageSize = ADMIN_PAGE_SIZE,
+  filters: AdminProductFilters = { descending: true }
 ): Promise<PaginatedList<Product>> {
   const response = await apiClient.get<PaginatedList<Product>>("/products", {
-    params: { pageNumber, pageSize },
+    // Undefined values are dropped by axios, so empty filters send nothing extra.
+    params: {
+      pageNumber,
+      pageSize,
+      search: filters.search,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sortBy: filters.sortBy,
+      descending: filters.descending,
+    },
   });
   return response.data;
 }

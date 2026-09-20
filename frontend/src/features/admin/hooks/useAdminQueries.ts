@@ -5,6 +5,7 @@ import {
   getDashboardOverview,
   getPurchases,
   getUsers,
+  type AdminProductFilters,
 } from "../api/adminApi";
 
 // Admin dashboards should feel live; a short stale time keeps numbers fresh
@@ -43,11 +44,17 @@ export function useAdminPurchases(pageNumber: number, enabled = true) {
   });
 }
 
-/** GET /api/products — paginated with no filters and no category. */
-export function useAdminProducts(pageNumber: number, enabled = true) {
+/** GET /api/products — paginated products with optional search / price / sort filters. */
+export function useAdminProducts(
+  pageNumber: number,
+  filters: AdminProductFilters = { descending: true },
+  enabled = true,
+) {
   return useQuery({
-    queryKey: ["admin", "products", pageNumber],
-    queryFn: () => getAdminProducts(pageNumber, ADMIN_PAGE_SIZE),
+    // Filters live in the key so each filter combination is cached separately;
+    // mutation invalidation still works because it uses the ["admin", "products"] prefix.
+    queryKey: ["admin", "products", pageNumber, filters],
+    queryFn: () => getAdminProducts(pageNumber, ADMIN_PAGE_SIZE, filters),
     enabled,
     staleTime: STALE_MS,
     placeholderData: (previous) => previous,

@@ -1,8 +1,9 @@
-import React, { useState, type FormEvent } from "react";
+import React, { useMemo, useState, type FormEvent } from "react";
 import {
   X,
   Layers,
   RefreshCw,
+  Search,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
@@ -15,6 +16,7 @@ import { useAdminProducts } from "../hooks/useAdminQueries";
 import { useCreateVariant, useDeleteVariant, useUpdateVariant } from "../hooks/useAdminVariantMutations";
 import { useDeleteProduct, useUpdateProduct } from "../hooks/useAdminProductMutations";
 import type { ProductInput } from "../api/adminProductApi";
+import type { AdminProductFilters } from "../api/adminApi";
 import { useCategories } from "../../categories/hooks/useCategories";
 import { formatPriceDA, getPrice } from "../../../lib/pricing";
 import { resolveImageUrl } from "../../../lib/imageUrl";
@@ -53,10 +55,95 @@ const EMPTY_PRODUCT_DRAFT: ProductDraft = {
   categoryId: "",
 };
 
+/** Sort dropdown options mapped to the API's sortBy / descending params.
+ * With no sortBy, the API orders by creation date: descending = newest first. */
+type SortOption = "newest" | "oldest" | "price-low-high" | "price-high-low";
+
+const SORT_OPTIONS: Record<SortOption, { sortBy?: string; descending: boolean }> = {
+  newest: { sortBy: undefined, descending: true },
+  oldest: { sortBy: undefined, descending: false },
+  "price-low-high": { sortBy: "price", descending: false },
+  "price-high-low": { sortBy: "price", descending: true },
+};
+
 export const AdminProducts: React.FC = () => {
   const [page, setPage] = useState(1);
-  const { data, isPending, isError, isFetching, refetch } = useAdminProducts(page);
+
+  // Filter drafts (what the user is typing/selecting) vs applied filters (what
+  // the query uses). Nothing hits the API until the Apply button is clicked.
+  const [searchInput, setSearchInput] = useState("");
+  const [sortInput, setSortInput] = useState<SortOption>("newest");
+  const [minPriceInput, setMinPriceInput] = useState("");
+  const [maxPriceInput, setMaxPriceInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortOption>("newest");
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  // Applied filters for the query; sortBy/descending derived from the applied sort.
+  const sortConfig = SORT_OPTIONS[sort];
+  const filters = useMemo<AdminProductFilters>(
+    () => ({
+      search: search || undefined,
+      minPrice,
+      maxPrice,
+      sortBy: sortConfig.sortBy,
+      descending: sortConfig.descending,
+    }),
+    [search, minPrice, maxPrice, sortConfig],
+  );
+
+  const { data, isPending, isError, isFetching, refetch } = useAdminProducts(page, filters);
   const { data: categories } = useCategories();
+
+  // Applies the search / sort / price drafts to the query
+  // (Apply button, or Enter in any filter field).
+  const handleApplyFilters = (event: FormEvent) => {
+    event.preventDefault();
+
+    const parsePrice = (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) return undefined;
+      const value = Number(trimmed);
+      return Number.isFinite(value) && value >= 0 ? value : NaN;
+    };
+
+    const nextMin = parsePrice(minPriceInput);
+    const nextMax = parsePrice(maxPriceInput);
+    if (Number.isNaN(nextMin) || Number.isNaN(nextMax)) {
+      setPriceError("Prices must be numbers of 0 or more.");
+      return;
+    }
+    if (nextMin !== undefined && nextMax !== undefined && nextMin > nextMax) {
+      setPriceError("Min price cannot be greater than max price.");
+      return;
+    }
+
+    setPriceError(null);
+    setSearch(searchInput.trim());
+    setSort(sortInput);
+    setMinPrice(nextMin);
+    setMaxPrice(nextMax);
+    setPage(1);
+  };
+
+  // Resets the drafts and applied filters back to their defaults.
+  const clearFilters = () => {
+    setSearchInput("");
+    setSortInput("newest");
+    setMinPriceInput("");
+    setMaxPriceInput("");
+    setSearch("");
+    setSort("newest");
+    setMinPrice(undefined);
+    setMaxPrice(undefined);
+    setPriceError(null);
+    setPage(1);
+  };
+
+  const hasActiveFilters =
+    Boolean(search) || minPrice !== undefined || maxPrice !== undefined || sort !== "newest";
 
   const createVariant = useCreateVariant();
   const updateVariant = useUpdateVariant();
@@ -269,6 +356,97 @@ export const AdminProducts: React.FC = () => {
         </div>
       </div>
 
+      {/* Filters: search, sort, price range */}
+      <form
+        onSubmit={handleApplyFilters}
+        className="bg-white border-4 border-primary p-4 shadow-[6px_6px_0_0_#000] flex flex-col lg:flex-row gap-4 lg:items-end"
+      >
+        <label className="flex flex-col gap-1.5 font-mono text-xs font-bold uppercase text-secondary lg:flex-1">
+          Search
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
+            <input
+              type="text"
+              maxLength={100}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search by product name…"
+              className="w-full border-2 border-primary bg-surface p-3 pl-9 pr-9 font-mono text-sm text-black focus:outline-none focus:bg-primary focus:text-white transition-colors placeholder:text-secondary"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setPage(1);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-secondary hover:text-primary transition-colors cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </label>
+
+        <label className="flex flex-col gap-1.5 font-mono text-xs font-bold uppercase text-secondary">
+          Sort
+          <select
+            value={sortInput}
+            onChange={(event) => setSortInput(event.target.value as SortOption)}
+            className="border-2 border-primary bg-surface p-3 font-mono text-sm font-bold text-black focus:outline-none focus:bg-primary focus:text-white transition-colors cursor-pointer"
+          >
+            <option value="newest">SORT: NEWEST</option>
+            <option value="oldest">SORT: OLDEST</option>
+            <option value="price-low-high">PRICE: LOW TO HIGH</option>
+            <option value="price-high-low">PRICE: HIGH TO LOW</option>
+          </select>
+        </label>
+
+        <div className="flex flex-col gap-1.5 font-mono text-xs font-bold uppercase text-secondary">
+          Price (DA)
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              placeholder="Min"
+              value={minPriceInput}
+              onChange={(event) => setMinPriceInput(event.target.value)}
+              className="w-28 border-2 border-primary bg-surface p-3 font-mono text-sm text-black focus:outline-none focus:bg-primary focus:text-white transition-colors placeholder:text-secondary"
+            />
+            <span className="font-black">-</span>
+            <input
+              type="number"
+              min={0}
+              placeholder="Max"
+              value={maxPriceInput}
+              onChange={(event) => setMaxPriceInput(event.target.value)}
+              className="w-28 border-2 border-primary bg-surface p-3 font-mono text-sm text-black focus:outline-none focus:bg-primary focus:text-white transition-colors placeholder:text-secondary"
+            />
+            <button
+              type="submit"
+              className="bg-primary text-white font-mono text-xs font-bold uppercase py-3 px-4 border-2 border-primary shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white hover:text-primary transition-all cursor-pointer"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={clearFilters}
+          disabled={!hasActiveFilters}
+          className="bg-surface text-primary font-mono text-xs font-bold uppercase py-3 px-4 border-2 border-primary shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none self-start lg:self-auto"
+        >
+          Clear Filters
+        </button>
+      </form>
+      {priceError && (
+        <p className="bg-red-50 border-2 border-red-600 px-3 py-2 font-mono text-xs font-bold uppercase text-red-700">
+          {priceError}
+        </p>
+      )}
       {isError && (
         <div className="bg-red-50 border-4 border-red-600 p-4 flex items-center justify-between gap-4">
           <p className="font-mono text-xs font-bold uppercase text-red-700">Failed to load products.</p>
@@ -322,7 +500,20 @@ export const AdminProducts: React.FC = () => {
               <tr>
                 <td colSpan={8} className="p-6 text-center text-secondary font-mono">
                   <PackageOpen className="w-8 h-8 mx-auto mb-2" />
-                  No products found.
+                  {hasActiveFilters ? (
+                    <>
+                      <p>No products match your filters.</p>
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="mt-3 bg-surface text-primary font-mono text-xs font-bold uppercase py-2 px-4 border-2 border-primary shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white transition-all cursor-pointer"
+                      >
+                        Clear Filters
+                      </button>
+                    </>
+                  ) : (
+                    <p>No products found.</p>
+                  )}
                 </td>
               </tr>
             ) : (

@@ -84,6 +84,11 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Mark every request that reaches here as retried — including ones
+    // that get queued below (they didn't trigger the refresh, but a second
+    // 401 on their replay must not start another refresh cycle).
+    originalRequest._retry = true;
+
     // If refreshing is already in progress, push this request promise to queue
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
@@ -98,7 +103,6 @@ apiClient.interceptors.response.use(
         .catch((err) => Promise.reject(err));
     }
 
-    originalRequest._retry = true;
     isRefreshing = true;
 
     try {
