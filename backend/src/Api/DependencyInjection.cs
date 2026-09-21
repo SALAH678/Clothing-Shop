@@ -113,18 +113,6 @@ public static class DependencyInjection
                     _ => new SlidingWindowRateLimiterOptions
                     { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 
-            // LogIn, ResetPassword, VerifyEmail — email-partitioned, guards against credential/code guessing
-            //options.AddPolicy("auth-email-strict", context =>
-            //    RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
-            //        _ => new SlidingWindowRateLimiterOptions
-            //        { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
-
-            // ForgotPassword, ResendCode — target-partitioned, guards against inbox/SMS bombing
-            //options.AddPolicy("auth-target-strict", context =>
-            //    RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
-            //        _ => new SlidingWindowRateLimiterOptions
-            //        { PermitLimit = 3, Window = TimeSpan.FromMinutes(15), SegmentsPerWindow = 3, QueueLimit = 0 }));
-
             options.AddPolicy("authenticated-read", context =>
                 RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
                     _ => new SlidingWindowRateLimiterOptions
