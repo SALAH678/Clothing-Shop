@@ -41,7 +41,13 @@ public class ResetPassword(IMediator mediator, [FromKeyedServices("auth-email-st
     {
         using var lease = await emailLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
         if (!lease.IsAcquired)
+        {
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterMetadata)
+                ? retryAfterMetadata
+                : TimeSpan.FromSeconds(60);
+            HttpContext.Response.Headers.Append("Retry-After", ((int)retryAfter.TotalSeconds).ToString());
             return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+        }
 
         var result = await _mediator.Send(req, ct);
         

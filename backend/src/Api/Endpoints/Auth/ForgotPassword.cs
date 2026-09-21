@@ -37,7 +37,13 @@ public class ForgotPassword(IMediator mediator, [FromKeyedServices("auth-target-
     {
         using var lease = await targetLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
         if (!lease.IsAcquired)
+        {
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterMetadata)
+                ? retryAfterMetadata
+                : TimeSpan.FromSeconds(60);
+            HttpContext.Response.Headers.Append("Retry-After", ((int)retryAfter.TotalSeconds).ToString());
             return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+        }
 
         var result = await _mediator.Send(req, ct);
         
