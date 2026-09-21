@@ -4,6 +4,8 @@ import type { FieldValues } from "react-hook-form";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useGoogleLogin, useLogin } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import RateLimitNotice from "../components/ui/RateLimitNotice";
+import { useRateLimit } from "../lib/rateLimit";
 import { gmailRules, passwordRules } from "../lib/validation";
 
 export default function Login() {
@@ -21,6 +23,11 @@ export default function Login() {
 
   const { mutate: loginUser, isPending, error: loginError } = useLogin();
   const { mutate: googleLogin, isPending: isGooglePending, error: googleLoginError } = useGoogleLogin();
+
+  // 429s from the backend limiters (auth-ip-spray-guard / auth-email-strict / auth-ip-relaxed).
+  const loginRateLimit = useRateLimit(loginError);
+  const googleRateLimit = useRateLimit(googleLoginError);
+  const isRateLimited = loginRateLimit.active || googleRateLimit.active;
 
   const onSubmit = (data: FieldValues) => {
     loginUser(
@@ -102,22 +109,24 @@ export default function Login() {
                 </span>
               )}
             </div>
-            {loginError && (
+            {loginError && !loginRateLimit.active && (
               <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                 {(loginError as ApiErrorResponse)?.response?.data?.detail ||
                   (loginError as ApiErrorResponse)?.response?.data?.message ||
                   "Invalid email or password"}
               </div>
             )}
-            {googleLoginError && (
+            {googleLoginError && !googleRateLimit.active && (
               <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                 {googleErrorMessage}
               </div>
             )}
+            <RateLimitNotice message={loginRateLimit.message} />
+            <RateLimitNotice message={googleRateLimit.message} />
 
             <div className="pt-4 space-y-4">
               <button
-                disabled={isPending}
+                disabled={isPending || isRateLimited}
                 className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
               >
@@ -133,7 +142,7 @@ export default function Login() {
               <div className="grow border-t-2 border-primary"></div>
             </div>
 
-            <div className={`flex justify-center ${isGooglePending ? "pointer-events-none opacity-50" : ""}`}>
+            <div className={`flex justify-center ${isGooglePending || isRateLimited ? "pointer-events-none opacity-50" : ""}`}>
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => undefined}

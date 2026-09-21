@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { retryPurchase } from "../features/purchases/api/purchaseApi";
+import { getRateLimitMessage } from "../lib/rateLimit";
 
 export default function CheckoutFailed() {
   const navigate = useNavigate();
@@ -43,7 +44,8 @@ export default function CheckoutFailed() {
         responseData?.error ||
         responseData?.message ||
         (err instanceof Error ? err.message : "Failed to retry payment. Please try again or return to checkout.");
-      setErrorMessage(errorText);
+      // A 429 from purchase-strict has no body — surface the retry window instead.
+      setErrorMessage(getRateLimitMessage(err, errorText));
     } finally {
       setIsRetrying(false);
     }

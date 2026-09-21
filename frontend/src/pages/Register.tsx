@@ -3,6 +3,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useGoogleRegister, useRegister } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import RateLimitNotice from "../components/ui/RateLimitNotice";
+import { useRateLimit } from "../lib/rateLimit";
 import { digitsOnly, gmailRules, nameRules, passwordRules, phoneRules } from "../lib/validation";
 
 export interface RegisterFormValues {
@@ -33,6 +35,11 @@ export default function Register() {
   const { mutate: registerUser, isPending, error: registerError } = useRegister();
   const { mutate: registerWithGoogle, isPending: isGooglePending, error: googleError } = useGoogleRegister();
   const phoneNumber = useWatch({ control, name: "phone" });
+
+  // 429s from the backend limiters (auth-ip-create / auth-ip-relaxed).
+  const registerRateLimit = useRateLimit(registerError);
+  const googleRateLimit = useRateLimit(googleError);
+  const isRateLimited = registerRateLimit.active || googleRateLimit.active;
 
   const onSubmit = (data: RegisterFormValues) => {
     registerUser(
@@ -193,22 +200,24 @@ export default function Register() {
                 lowercase letter, one number, and one special character.
               </p>
             </div>
-            {registerError && (
+            {registerError && !registerRateLimit.active && (
               <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                 {(registerError as ApiErrorResponse)?.response?.data?.detail ||
                   (registerError as ApiErrorResponse)?.response?.data?.message ||
                   "Registration failed. Please check your data."}
               </div>
             )}
-            {googleError && (
+            {googleError && !googleRateLimit.active && (
               <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                 {googleErrorMessage || "Google registration failed. Please try again."}
               </div>
             )}
+            <RateLimitNotice message={registerRateLimit.message} />
+            <RateLimitNotice message={googleRateLimit.message} />
 
             <div className="pt-4 space-y-4">
               <button
-                disabled={isPending}
+                disabled={isPending || isRateLimited}
                 className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
               >

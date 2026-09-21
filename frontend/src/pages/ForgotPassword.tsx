@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm, type FieldValues } from "react-hook-form";
 import { useForgotPassword, useResetPassword, useResendCode } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import RateLimitNotice from "../components/ui/RateLimitNotice";
+import { isRateLimitError, useRateLimit } from "../lib/rateLimit";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -13,12 +15,18 @@ export default function ForgotPassword() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [codeError, setCodeError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [resendError, setResendError] = useState<unknown>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const { mutate: sendForgotEmail, isPending: isSendingEmail, error: forgotError } = useForgotPassword();
 
   const { mutate: resetUserPassword, isPending: isResetting, error: resetError } = useResetPassword();
   const { mutate: resend, isPending: isResending } = useResendCode();
+
+  // 429s from the backend limiters (auth-target-strict / auth-email-strict).
+  const forgotRateLimit = useRateLimit(forgotError);
+  const resetRateLimit = useRateLimit(resetError);
+  const resendRateLimit = useRateLimit(resendError);
 
   // Single countdown driver — the reset-step effect below owns the interval.
   // (Previously two effects each ran setInterval, doubling the tick speed.)
@@ -75,11 +83,16 @@ export default function ForgotPassword() {
       { email, verificationTokenType: "PasswordReset" },
       {
         onSuccess: () => {
+          setResendError(null);
           setTimeLeft(300);
           setStatusMessage("A new reset code has been sent!");
         },
         onError: (err: Error) => {
-          setCodeError((err as ApiErrorResponse)?.response?.data?.detail || "Failed to resend code.");
+          // Keep the raw error around so useRateLimit can run the live countdown.
+          setResendError(err);
+          if (!isRateLimitError(err)) {
+            setCodeError((err as ApiErrorResponse)?.response?.data?.detail || "Failed to resend code.");
+          }
         },
       },
     );
@@ -184,17 +197,18 @@ export default function ForgotPassword() {
                   </p>
                 </div>
 
-                {forgotError && (
+                {forgotError && !forgotRateLimit.active && (
                   <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                     {(forgotError as ApiErrorResponse)?.response?.data?.detail ||
                       (forgotError as ApiErrorResponse)?.response?.data?.message ||
                       "Failed to send reset code. Please verify email."}
                   </div>
                 )}
+                <RateLimitNotice message={forgotRateLimit.message} />
 
                 <div className="pt-4 space-y-4">
                   <button
-                    disabled={isSendingEmail}
+                    disabled={isSendingEmail || forgotRateLimit.active}
                     className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                     type="submit"
                   >
@@ -250,13 +264,14 @@ export default function ForgotPassword() {
                     <button
                       type="button"
                       onClick={handleResendCode}
-                      disabled={isResending}
+                      disabled={isResending || resendRateLimit.active}
                       className="text-primary underline hover:bg-primary hover:text-white px-1 transition-colors duration-200 disabled:opacity-50"
                     >
                       {isResending ? "SENDING CODE..." : "RESEND CODE"}
                     </button>
                   )}
                 </div>
+                <RateLimitNotice message={resendRateLimit.message} />
                 <p className="font-mono text-[10px] sm:text-xs text-secondary font-bold uppercase mt-2 text-center">
                   Note: If you didn't find the code, check your spam section.
                 </p>
@@ -290,17 +305,18 @@ export default function ForgotPassword() {
                   </p>
                 </div>
 
-                {resetError && (
+                {resetError && !resetRateLimit.active && (
                   <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                     {(resetError as ApiErrorResponse)?.response?.data?.detail ||
                       (resetError as ApiErrorResponse)?.response?.data?.message ||
                       "Password reset failed. Please check code or try again."}
                   </div>
                 )}
+                <RateLimitNotice message={resetRateLimit.message} />
 
                 <div className="pt-4 space-y-4 flex flex-col items-center">
                   <button
-                    disabled={isResetting}
+                    disabled={isResetting || resetRateLimit.active}
                     className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                     type="submit"
                   >

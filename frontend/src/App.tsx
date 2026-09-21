@@ -4,13 +4,16 @@ import AppRoutes from "./routes/AppRoutes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./features/auth/contexts/authProvider";
 import { CartProvider } from "./features/carts/contexts/CartContext";
+import { isRateLimitError } from "./lib/rateLimit";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
       gcTime: 5 * 60 * 1000,
-      retry: 1,
+      // Never auto-retry a 429 — the backend is already telling us to back off;
+      // an instant retry would just hammer the limiter again.
+      retry: (failureCount, error) => (isRateLimitError(error) ? false : failureCount < 1),
       refetchOnWindowFocus: false,
     },
   },

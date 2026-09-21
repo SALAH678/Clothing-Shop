@@ -2,6 +2,8 @@ import { useState, useRef, type KeyboardEvent, useEffect } from "react";
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useVerifyEmail, useResendCode } from "../features/auth/hooks";
 import type { ApiErrorResponse } from "../features/auth/types/ApiErrorResponse";
+import RateLimitNotice from "../components/ui/RateLimitNotice";
+import { isRateLimitError, useRateLimit } from "../lib/rateLimit";
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -11,11 +13,16 @@ export default function VerifyEmail() {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [codeError, setCodeError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [resendError, setResendError] = useState<unknown>(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const { mutate: verify, isPending: isVerifying, error: verifyError } = useVerifyEmail();
   const { mutate: resend, isPending: isResending } = useResendCode();
+
+  // 429s from the backend limiters (auth-email-strict / auth-target-strict).
+  const verifyRateLimit = useRateLimit(verifyError);
+  const resendRateLimit = useRateLimit(resendError);
 
   // Single ticking timer for the whole page lifetime. Using `[]`-style deps
   // (here `[email]`) avoids tearing down and recreating the interval on every
@@ -69,11 +76,16 @@ export default function VerifyEmail() {
       { email, verificationTokenType: "EmailVerification" },
       {
         onSuccess: () => {
+          setResendError(null);
           setTimeLeft(300); // Reset timer to 5 minutes
           setStatusMessage("A new verification code has been sent!");
         },
         onError: (err: Error) => {
-          setCodeError((err as ApiErrorResponse)?.response?.data?.detail || "Failed to resend verification code.");
+          // Keep the raw error around so useRateLimit can run the live countdown.
+          setResendError(err);
+          if (!isRateLimitError(err)) {
+            setCodeError((err as ApiErrorResponse)?.response?.data?.detail || "Failed to resend verification code.");
+          }
         },
       },
     );
@@ -158,13 +170,14 @@ export default function VerifyEmail() {
                 <span className="text-red-500 font-mono text-xs font-bold uppercase mt-1 block">{codeError}</span>
               )}
 
-              {verifyError && (
+              {verifyError && !verifyRateLimit.active && (
                 <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase mt-2">
                   {(verifyError as ApiErrorResponse)?.response?.data?.detail ||
                     (verifyError as ApiErrorResponse)?.response?.data?.message ||
                     "Invalid verification code."}
                 </div>
               )}
+              <RateLimitNotice message={verifyRateLimit.message} />
 
               {statusMessage && (
                 <div className="p-3 bg-green-50 border-2 border-green-500 font-mono text-xs font-bold text-green-700 uppercase mt-2">
@@ -181,13 +194,14 @@ export default function VerifyEmail() {
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={isResending}
+                    disabled={isResending || resendRateLimit.active}
                     className="text-primary underline hover:bg-primary hover:text-white px-1 transition-colors duration-200 disabled:opacity-50"
                   >
                     {isResending ? "SENDING CODE..." : "RESEND CODE"}
                   </button>
                 )}
               </div>
+              <RateLimitNotice message={resendRateLimit.message} />
               <p className="font-mono text-[10px] sm:text-xs text-secondary font-bold uppercase mt-2 text-center">
                 Note: If you didn't find the code, check your spam section.
               </p>
@@ -195,7 +209,7 @@ export default function VerifyEmail() {
 
             <div className="pt-4 space-y-4 flex flex-col items-center">
               <button
-                disabled={isVerifying}
+                disabled={isVerifying || verifyRateLimit.active}
                 className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
               >

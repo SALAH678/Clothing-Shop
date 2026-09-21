@@ -8,6 +8,7 @@ import { useProduct } from "../features/products/hooks/useProduct";
 import EmptyState from "../components/ui/EmptyState";
 import { resolveImageUrl } from "../lib/imageUrl";
 import { formatPriceDA, getPrice } from "../lib/pricing";
+import { getRateLimitMessage } from "../lib/rateLimit";
 
 interface CheckoutFormData {
   phone: string;
@@ -154,7 +155,8 @@ export default function Checkout() {
         responseData?.error ||
         responseData?.message ||
         (err instanceof Error ? err.message : "Failed to place order. Please check your information and try again.");
-      setSubmissionError(errorMsg);
+      // A 429 from purchase-strict has no body — surface the retry window instead.
+      setSubmissionError(getRateLimitMessage(err, errorMsg));
     } finally {
       setIsSubmitting(false);
     }
