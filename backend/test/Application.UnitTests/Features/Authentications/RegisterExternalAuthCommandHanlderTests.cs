@@ -6,6 +6,7 @@ using Application.Common.Interfaces.Services;
 using Application.Features.Authentications.Commands.RegisterExternalAuth;
 using AutoMapper;
 using Domain.Common.ValueObjects.Email;
+using Domain.Users;
 using Domain.Users.Accounts;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
