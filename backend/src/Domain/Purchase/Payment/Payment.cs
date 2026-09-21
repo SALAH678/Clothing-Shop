@@ -36,6 +36,11 @@ public class Payment : AuditableEntity
         return new Payment(purchaseId, amount, status, transactionId?.Trim());
     }
 
+    public void AddPurchase(Purchase purchase)
+    {
+        Purchase = purchase;
+    }
+
     public Result<Updated> AttachCheckout(string? checkoutId)
     {
         if (string.IsNullOrWhiteSpace(checkoutId))
