@@ -75,7 +75,7 @@ public static class DependencyInjection
         });
 
         static string GetClientIp(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        static string GetEmailKey(HttpContext ctx) => ctx.Request.Query["email"].FirstOrDefault() ?? GetClientIp(ctx);
+        //static string GetEmailKey(HttpContext ctx) => ctx.Request.Query["email"].FirstOrDefault() ?? GetClientIp(ctx);
         static string GetUserId(HttpContext ctx) => ctx.User.FindFirst("sub")?.Value ?? GetClientIp(ctx);
 
         services.AddRateLimiter(options =>
@@ -114,33 +114,23 @@ public static class DependencyInjection
                     { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 
             // LogIn, ResetPassword, VerifyEmail — email-partitioned, guards against credential/code guessing
-            options.AddPolicy("auth-email-strict", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
-                    _ => new SlidingWindowRateLimiterOptions
-                    { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
+            //options.AddPolicy("auth-email-strict", context =>
+            //    RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
+            //        _ => new SlidingWindowRateLimiterOptions
+            //        { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 
             // ForgotPassword, ResendCode — target-partitioned, guards against inbox/SMS bombing
-            options.AddPolicy("auth-target-strict", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
-                    _ => new SlidingWindowRateLimiterOptions
-                    { PermitLimit = 3, Window = TimeSpan.FromMinutes(15), SegmentsPerWindow = 3, QueueLimit = 0 }));
+            //options.AddPolicy("auth-target-strict", context =>
+            //    RateLimitPartition.GetSlidingWindowLimiter(GetEmailKey(context),
+            //        _ => new SlidingWindowRateLimiterOptions
+            //        { PermitLimit = 3, Window = TimeSpan.FromMinutes(15), SegmentsPerWindow = 3, QueueLimit = 0 }));
 
-            options.AddPolicy("cart-read", context =>
+            options.AddPolicy("authenticated-read", context =>
                 RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
                     _ => new SlidingWindowRateLimiterOptions
                     { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 
-            options.AddPolicy("cart-write", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
-                    _ => new SlidingWindowRateLimiterOptions
-                    { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
-
-            options.AddPolicy("admin-read", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
-                    _ => new SlidingWindowRateLimiterOptions
-                    { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
-
-            options.AddPolicy("admin-write", context =>
+            options.AddPolicy("authenticated-write", context =>
                 RateLimitPartition.GetSlidingWindowLimiter(GetUserId(context),
                     _ => new SlidingWindowRateLimiterOptions
                     { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
@@ -150,7 +140,37 @@ public static class DependencyInjection
                     _ => new SlidingWindowRateLimiterOptions
                     { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 
+            options.AddPolicy("upload-concurrency", context =>
+                RateLimitPartition.GetConcurrencyLimiter("uploads",
+                    _ => new ConcurrencyLimiterOptions
+                    { PermitLimit = 4, QueueLimit = 2, QueueProcessingOrder = QueueProcessingOrder.OldestFirst }));
+
         });
+
+        //register a limiter you can call directly, not tied to the middleware pipeline
+        services.AddKeyedSingleton<PartitionedRateLimiter<string>>("auth-email-strict", (_, _) =>
+            PartitionedRateLimiter.Create<string, string>(email =>
+                RateLimitPartition.GetSlidingWindowLimiter(email, _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 4,
+                    QueueLimit = 0
+                })
+            )
+        );
+
+        services.AddKeyedSingleton<PartitionedRateLimiter<string>>("auth-target-strict", (_, _) =>
+            PartitionedRateLimiter.Create<string, string>(target =>
+                RateLimitPartition.GetSlidingWindowLimiter(target, _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(15),
+                    SegmentsPerWindow = 3,
+                    QueueLimit = 0
+                })
+            )
+        );
 
         return services;
     }
