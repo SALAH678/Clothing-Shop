@@ -16,7 +16,7 @@ public class GetCategoryById(IMediator mediator) : Endpoint<GetCategoryByIdQuery
         Get("/{categoryId:guid}");
         Group<CategoryGroup>();
         Roles("Admin", "Customer");
-        Options(x => x.RequireRateLimiting("admin-read"));
+        Options(x => x.RequireRateLimiting("authenticated-read"));
 
         Summary(s =>
         {

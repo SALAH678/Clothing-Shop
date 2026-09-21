@@ -16,7 +16,7 @@ public class DeleteCategory(IMediator mediator) : Endpoint<DeleteCategoryCommand
         Delete("/{categoryId:guid}");
         Group<CategoryGroup>();
         Roles("Admin");
-        Options(x => x.RequireRateLimiting("admin-write"));
+        Options(x => x.RequireRateLimiting("authenticated-write"));
 
         Summary(s =>
         {

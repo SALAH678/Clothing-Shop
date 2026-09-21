@@ -19,7 +19,7 @@ public class UpdateCategory(IMediator mediator) : Endpoint<UpdateCategoryRequest
         Roles("Admin");
         AllowFileUploads();
         Options(x => x
-            .RequireRateLimiting("admin-write")
+            .RequireRateLimiting("authenticated-write")
             .RequireRateLimiting("upload-concurrency")
         );
 

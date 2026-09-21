@@ -2,10 +2,12 @@
 using Application.Features.Authentications.Command.ResendVerificationCode;
 using FastEndpoints;
 using MediatR;
+using System.Threading.RateLimiting;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, IResult>
+public class ResendCode(IMediator mediator, [FromKeyedServices("auth-target-strict")] PartitionedRateLimiter<string> targetLimiter)
+    : Endpoint<ResendCodeCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -14,7 +16,6 @@ public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, IResul
         Post("/resend-code");
         Group<AuthGroup>();
         AllowAnonymous();
-        Options(x => x.RequireRateLimiting("auth-target-strict"));
 
         Summary(s =>
         {
@@ -38,6 +39,10 @@ public class ResendCode(IMediator mediator) : Endpoint<ResendCodeCommand, IResul
 
     public override async Task<IResult> ExecuteAsync(ResendCodeCommand req, CancellationToken ct)
     {
+        using var lease = await targetLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
+        if (!lease.IsAcquired)
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var result = await _mediator.Send(req, ct);
 
         return result.Match(

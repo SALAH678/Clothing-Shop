@@ -15,7 +15,7 @@ public class AddCartItem(IMediator mediator) : Endpoint<AddCartItemCommand, IRes
         Post("/items/{variantId:guid}");
         Group<CartGroup>();
         Roles("Admin", "Customer");
-        Options(x => x.RequireRateLimiting("cart-write"));
+        Options(x => x.RequireRateLimiting("authenticated-write"));
 
         Summary(s =>
         {

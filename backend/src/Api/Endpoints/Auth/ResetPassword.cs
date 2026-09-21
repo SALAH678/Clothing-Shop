@@ -2,10 +2,12 @@
 using Application.Features.Authentications.Command.ResetPassword;
 using FastEndpoints;
 using MediatR;
+using System.Threading.RateLimiting;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, IResult>
+public class ResetPassword(IMediator mediator, [FromKeyedServices("auth-email-strict")] PartitionedRateLimiter<string> emailLimiter)
+    : Endpoint<ResetPasswordCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -14,7 +16,6 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
         Post("/reset-password");
         Group<AuthGroup>();
         AllowAnonymous();
-        Options(x => x.RequireRateLimiting("auth-email-strict"));
 
         Summary(s =>
         {
@@ -38,6 +39,10 @@ public class ResetPassword(IMediator mediator) : Endpoint<ResetPasswordCommand, 
 
     public override async Task<IResult> ExecuteAsync(ResetPasswordCommand req, CancellationToken ct)
     {
+        using var lease = await emailLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
+        if (!lease.IsAcquired)
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var result = await _mediator.Send(req, ct);
         
         return result.Match(

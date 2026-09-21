@@ -2,10 +2,12 @@
 using Application.Features.Authentications.Command.ForgotPassword;
 using FastEndpoints;
 using MediatR;
+using System.Threading.RateLimiting;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand, IResult>
+public class ForgotPassword(IMediator mediator, [FromKeyedServices("auth-target-strict")] PartitionedRateLimiter<string> targetLimiter)
+    : Endpoint<ForgotPasswordCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -14,7 +16,6 @@ public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand
         Post("/forgot-password");
         Group<AuthGroup>();
         AllowAnonymous();
-        Options(x => x.RequireRateLimiting("auth-target-strict"));
 
         Summary(s =>
         {
@@ -34,6 +35,10 @@ public class ForgotPassword(IMediator mediator) : Endpoint<ForgotPasswordCommand
 
     public override async Task<IResult> ExecuteAsync(ForgotPasswordCommand req, CancellationToken ct)
     {
+        using var lease = await targetLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
+        if (!lease.IsAcquired)
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var result = await _mediator.Send(req, ct);
         
         return result.Match(

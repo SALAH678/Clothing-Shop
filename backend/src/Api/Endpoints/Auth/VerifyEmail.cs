@@ -3,10 +3,12 @@ using Application.Features.Authentications.Command.VerifyEmail;
 using Domain.Common.Results;
 using FastEndpoints;
 using MediatR;
+using System.Threading.RateLimiting;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
-public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, IResult>
+public class VerifyEmail(IMediator mediator, [FromKeyedServices("auth-email-strict")] PartitionedRateLimiter<string> emailLimiter)
+    : Endpoint<VerifyEmailCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -15,7 +17,6 @@ public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, IRes
         Post("/verify-email");
         Group<AuthGroup>();
         AllowAnonymous();
-        Options(x => x.RequireRateLimiting("auth-email-strict"));
 
         Summary(s =>
         {
@@ -41,6 +42,10 @@ public class VerifyEmail(IMediator mediator) : Endpoint<VerifyEmailCommand, IRes
 
     public override async Task<IResult> ExecuteAsync(VerifyEmailCommand req, CancellationToken ct)
     {
+        using var lease = await emailLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
+        if (!lease.IsAcquired)
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var result = await _mediator.Send(req, ct);
 
         return result.Match(

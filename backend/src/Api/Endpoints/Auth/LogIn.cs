@@ -3,13 +3,15 @@ using Application.Features.Authentications.Command.Login;
 using Application.Features.Users.Dtos;
 using FastEndpoints;
 using MediatR;
+using System.Threading.RateLimiting;
 using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Api.Endpoints.Auth;
 
 public record LoginResponse(UserDto User, string AccessToken);
 
-public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
+public class LogIn(IMediator mediator, [FromKeyedServices("auth-email-strict")] PartitionedRateLimiter<string> emailLimiter)
+    : Endpoint<LoginCommand, IResult>
 {
     private readonly IMediator _mediator = mediator;
 
@@ -18,10 +20,7 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
         Post("/login");
         Group<AuthGroup>();
         AllowAnonymous();
-        Options(x => x
-            .RequireRateLimiting("auth-ip-spray-guard")
-            .RequireRateLimiting("auth-email-strict")
-        );
+        Options(x => x.RequireRateLimiting("auth-ip-spray-guard"));
 
         Summary(s =>
         {
@@ -42,6 +41,10 @@ public class LogIn(IMediator mediator) : Endpoint<LoginCommand, IResult>
     }
     public override async Task<IResult> ExecuteAsync(LoginCommand req, CancellationToken ct)
     {
+        using var lease = await emailLimiter.AcquireAsync(req.Email, permitCount: 1, ct);
+        if (!lease.IsAcquired)
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var result = await _mediator.Send(req, ct);
 
         return result.Match(

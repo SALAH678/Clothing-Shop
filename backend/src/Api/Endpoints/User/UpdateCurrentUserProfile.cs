@@ -16,7 +16,7 @@ public class UpdateCurrentUserProfile(IMediator mediator) : Endpoint<UpdateCurre
         Put("/current");
         Group<UserGroup>();
         Roles("Admin", "Customer");
-        Options(x => x.RequireRateLimiting("admin-write"));
+        Options(x => x.RequireRateLimiting("authenticated-write"));
 
         Summary(s =>
         {
