@@ -15,7 +15,7 @@ namespace infrastructure.Data;
 /// identifiers are present anywhere in this file.
 ///
 /// A single demo account is seeded so reviewers can log in and try the app:
-///   email:    demo.admin@example.com
+///   email:    demo.admin@gmail.com
 ///   password: Demo1234!
 ///
 /// Snapshot contents:
@@ -2925,9 +2925,9 @@ public class ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitial
         // ==== Users (demo accounts — synthetic, no real people) ====
         """
         INSERT INTO "identity"."Users" ("Id", "FirstName", "LastName", "Email", "PhoneNumber", "EmailVerified", "UserRole", "CreatedAtUtc", "LastModifiedUtc") VALUES
-        ('9f1af98f-b45e-4e2b-9646-9ca0ff045d86', 'Demo', 'Customer', 'demo.customer@example.com', '0555000111', true, 'Customer', '2026-08-29 10:03:19.826197+00', NULL),
-        ('dc081c27-470b-4527-bb89-467e51649d67', 'Demo', 'Admin', 'demo.admin@example.com', '0555000222', true, 'Admin', '2026-08-29 09:46:54.202556+00', NULL),
-        ('48f32e55-7cba-4165-b357-1824d4f35fc4', 'Demo', 'Google User', 'demo.googleuser@example.com', '0555000333', true, 'Customer', '2026-09-16 14:39:42.285178+00', NULL);
+        ('9f1af98f-b45e-4e2b-9646-9ca0ff045d86', 'Demo', 'Customer', 'demo.customer@gmail.com', '0555000111', true, 'Customer', '2026-08-29 10:03:19.826197+00', NULL),
+        ('dc081c27-470b-4527-bb89-467e51649d67', 'Demo', 'Admin', 'demo.admin@gmail.com', '0555000222', true, 'Admin', '2026-08-29 09:46:54.202556+00', NULL),
+        ('48f32e55-7cba-4165-b357-1824d4f35fc4', 'Demo', 'Google User', 'demo.googleuser@gmail.com', '0555000333', true, 'Customer', '2026-09-16 14:39:42.285178+00', NULL);
         """,
         // ==== Accounts (fake password hash for a real demo login + fake OAuth id) ====
         """
