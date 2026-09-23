@@ -42,6 +42,9 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
         });
 
+        //Database initialiser and seeder
+        services.AddScoped<ApplicationDbContextInitialiser>();
+
         //Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();

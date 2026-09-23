@@ -2,6 +2,7 @@ using Chargily.Pay.AspNet;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HealthChecks.UI.Client;
+using infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.FileProviders;
 using Serilog;
@@ -19,6 +20,14 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+
+    await initialiser.InitialiseAsync();
+    await initialiser.SeedAsync();
+}
 
 // add middleware to the HTTP request pipeline.
 
