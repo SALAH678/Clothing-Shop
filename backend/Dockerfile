@@ -19,6 +19,5 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 COPY --from=build /app .
-USER app
 ENTRYPOINT ["dotnet", "Api.dll"]
 
