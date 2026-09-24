@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
 import { useAdminUsers } from "../hooks/useAdminQueries";
+import CreateUserForm from "./CreateUserForm";
 
 const shortId = (id: string) => id.slice(0, 8).toUpperCase();
 
 export const AdminUsers: React.FC = () => {
   const [page, setPage] = useState(1);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { data, isPending, isError, isFetching, refetch } = useAdminUsers(page);
 
   const users = data?.items ?? [];
@@ -14,6 +16,39 @@ export const AdminUsers: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border-4 border-primary p-4 shadow-[6px_6px_0_0_#000]">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm font-bold uppercase text-secondary">Total Users:</span>
+          <span className="font-mono font-bold text-xs bg-primary text-white px-3 py-1 border border-primary">
+            {isPending ? "…" : `${totalCount} users`}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="bg-primary text-white font-mono text-xs font-bold uppercase py-2 px-4 border-2 border-primary flex items-center gap-2 shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white hover:text-primary transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Add User
+          </button>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            disabled={isFetching}
+            className="bg-surface text-primary font-mono text-xs font-bold uppercase py-2 px-4 border-2 border-primary flex items-center gap-2 shadow-[3px_3px_0_0_#000] hover:shadow-[1px_1px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-white transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {isCreateOpen && (
+        <CreateUserForm
+          onClose={() => setIsCreateOpen(false)}
+          onCreated={() => setPage(1)}
+        />
+      )}
+
       {isError && (
         <div className="bg-red-50 border-4 border-red-600 p-4 flex items-center justify-between gap-4">
           <p className="font-mono text-xs font-bold uppercase text-red-700">Failed to load users.</p>

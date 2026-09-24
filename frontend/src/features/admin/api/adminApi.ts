@@ -22,6 +22,29 @@ export async function getUsers(
   return response.data;
 }
 
+/** Payload for POST /api/users — mirrors backend CreateUserCommand.
+ * Backend (CreateUser.cs / CreateUserCommandValidator):
+ * - FirstName / LastName: required, letters + spaces only
+ * - Email: required, valid email
+ * - PhoneNumber: required, Algerian mobile `^0[5-7][0-9]{8}$`
+ * - Password: required, min 6 chars with upper + lower + digit + special
+ * - Role: "Customer" | "Admin"
+ */
+export interface CreateAdminUserInput {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  password: string;
+  role: "Customer" | "Admin";
+}
+
+/** POST /api/users — create a user account (Admin only). Returns the created AdminUser. */
+export async function createUser(input: CreateAdminUserInput): Promise<AdminUser> {
+  const response = await apiClient.post<AdminUser>("/users", input);
+  return response.data;
+}
+
 /** GET /api/purchases — paginated list of all purchases (Admin only). */
 export async function getPurchases(
   pageNumber = 1,

@@ -103,7 +103,8 @@ public static class DependencyInjection
 
             // ExternalAuthLogin, ExternalAuthRegister, Refresh — cost/DoS only, no guessing risk
             options.AddPolicy("auth-ip-relaxed", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(GetClientIp(context),
+                
+            RateLimitPartition.GetSlidingWindowLimiter(GetClientIp(context),
                     _ => new SlidingWindowRateLimiterOptions
                     { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 4, QueueLimit = 0 }));
 

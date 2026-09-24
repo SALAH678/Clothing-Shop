@@ -4,6 +4,7 @@ using Application.Features.Users.Dtos;
 using AutoMapper;
 using Domain.Common.Results;
 using Domain.Common.ValueObjects.Email;
+using Domain.Common.ValueObjects.Password;
 using Domain.Common.ValueObjects.PhoneNumber;
 using Domain.Users;
 using Domain.Users.Accounts;
@@ -51,7 +52,14 @@ public class CreateUserCommandHandler(IUnitOfWork unitOfWork, IMapper mapper,
 
         userResult.Value.MarkEmailVerified();
 
-        var accountResult = Account.Create(userResult.Value.Id, "local", request.Password);
+        var passwordResult = Password.Create(request.Password);
+        if(!passwordResult.IsSuccess)
+        {
+            _logger.LogWarning("Create user failed: invalid password for Email: {Email}", request.Email);
+            return passwordResult.TopError;
+        }
+
+        var accountResult = Account.Create(userResult.Value.Id, "local", null, passwordResult.Value);
         if(accountResult.IsError)
         {
             _logger.LogWarning("Create user failed: account creation failed for Email: {Email}", request.Email);
