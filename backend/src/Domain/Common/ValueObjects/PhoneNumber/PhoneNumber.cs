@@ -12,7 +12,7 @@ public class PhoneNumber
         Value = value;
     }
 
-    private static readonly Regex PhoneNumberRegex = new(@"^[0-9]{10}$", RegexOptions.Compiled);
+    private static readonly Regex PhoneNumberRegex = new(@"^0[5-7][0-9]{8}$", RegexOptions.Compiled);
 
     public static Result<PhoneNumber> Create(string? value)
     {
@@ -21,8 +21,9 @@ public class PhoneNumber
 
         string preparedPhoneNumber = value.Trim();
 
+        //BR
         if (!PhoneNumberRegex.IsMatch(preparedPhoneNumber))
-            return PhoneNumberErrors.InvalidPhoneNumber;
+            return PhoneNumberErrors.ShouldBeAlgerianNumber;
 
         return new PhoneNumber(preparedPhoneNumber);
     }
