@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540" role="img" aria-labelledby="caTitle caDesc">
+  <title id="caTitle">Clean Architecture concentric circles</title>
+  <desc id="caDesc">Outer to inner: Api, Infrastructure, Application, Domain. Dependencies point inward.</desc>
+  <defs>
+    <marker id="arrowIn" viewBox="0 0 10 10" refX="8" refY="3" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 8 3 L 0 6 z" fill="#0f172a"/>
+    </marker>
+  </defs>
+
+  <!-- Outer: Api -->
+  <circle cx="330" cy="250" r="230" fill="#f1f5f9" stroke="#0f172a" stroke-width="2.5"/>
+  <!-- Infrastructure -->
+  <circle cx="330" cy="250" r="175" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2.5"/>
+  <!-- Application -->
+  <circle cx="330" cy="250" r="120" fill="#d1fae5" stroke="#047857" stroke-width="2.5"/>
+  <!-- Domain center -->
+  <circle cx="330" cy="250" r="65" fill="#fef3c7" stroke="#b45309" stroke-width="3"/>
+
+  <!-- Top band labels along vertical axis -->
+  <text x="330" y="48" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#0f172a">Api</text>
+  <text x="330" y="66" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569">endpoints + HTTP boundary</text>
+
+  <text x="330" y="108" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#1e40af">Infrastructure</text>
+  <text x="330" y="124" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1e40af">EF Core and external adapters</text>
+
+  <text x="330" y="163" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#065f46">Application</text>
+  <text x="330" y="179" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#065f46">Use cases</text>
+
+  <text x="330" y="244" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="800" fill="#92400e">Domain</text>
+  <text x="330" y="261" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#92400e"><tspan x="330" dy="0">Entities, business</tspan>
+  <tspan x="330" dy="14">rules, events</tspan></text>
+
+  <!-- Explicit dependency arrows (only the ones you asked for) -->
+  <!-- Api -> Application (jumps over Infrastructure band) -->
+  <path d="M 520 130 Q 500 170 440 185" fill="none" stroke="#0f172a" stroke-width="2" marker-end="url(#arrowIn)"/>
+  <text x="535" y="160" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#fff">Api → Application</text>
+
+  <!-- Infrastructure -> Application -->
+  <path d="M 485 250 L 455 250" fill="none" stroke="#1d4ed8" stroke-width="2.2" marker-end="url(#arrowIn)"/>
+  <text x="495" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#1e40af">Infrastructure → Application</text>
+
+  <!-- Application -> Domain -->
+  <path d="M 430 310 L 390 285" fill="none" stroke="#047857" stroke-width="2.2" marker-end="url(#arrowIn)"/>
+  <text x="438" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#065f46">Application → Domain</text>
+
+  <!-- Dependency rule note -->
+  <text x="330" y="505" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-style="italic" fill="#fff">Clean Architecture dependency rule: all dependencies point inward toward Domain.</text>
+</svg>
