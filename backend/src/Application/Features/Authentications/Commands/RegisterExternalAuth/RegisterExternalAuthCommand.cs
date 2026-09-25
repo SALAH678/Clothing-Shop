@@ -1,10 +1,11 @@
-﻿using Application.Features.Authentications.Dtos;
+﻿using Application.Common.Attributes;
+using Application.Features.Authentications.Dtos;
 using Domain.Common.Results;
 using MediatR;
 
 namespace Application.Features.Authentications.Commands.RegisterExternalAuth;
 
 public record RegisterExternalAuthCommand(
-    string IdToken,
-    string PhoneNumber
+    [property: Sensitive] string IdToken,
+    [property: Sensitive] string PhoneNumber
 ) : IRequest<Result<AuthResponse>>;

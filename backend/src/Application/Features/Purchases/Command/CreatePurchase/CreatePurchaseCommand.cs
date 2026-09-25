@@ -1,4 +1,5 @@
-﻿using Domain.Common.Results;
+﻿using Application.Common.Attributes;
+using Domain.Common.Results;
 using Domain.Common.ValueObjects.Address;
 using MediatR;
 
@@ -7,7 +8,7 @@ namespace Application.Features.Purchases.Command.CreatePurchase;
 public record CreatePurchaseCommand(
     string CustomerPhone,
     string Origin,
-    Address CustomerAddress,
+    [property: Sensitive] Address CustomerAddress,
     List<PurchaseLineItem> Items
 ) : IRequest<Result<CreatePurchaseResult>>;
 
