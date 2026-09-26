@@ -1,0 +1,113 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: clothing_shop_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - cs-backend-network
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  seq:
+    image: datalust/seq:latest
+    container_name: clothing_shop_seq
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_FIRSTRUN_ADMINUSERNAME}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD}
+    ports:
+      - "5341:80"
+    networks:
+      - cs-backend-network
+    volumes:
+      - seq_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: clothing_shop_api:1.0
+    container_name: clothing_shop_api
+    environment:
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${PASSWORD}
+      - JwtSettings__SecretKey=${SECRET_KEY}
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - Serilog__WriteTo__0__Name=Seq
+      - Serilog__WriteTo__0__Args__serverUrl=http://clothing_shop_seq:80
+      - Email__EmailAdmin=${EMAILADMIN}
+      - Chargily__WebhookEndpointUrl=https://${NGROK_DOMAIN}/api/purchases/webhook/payment
+    depends_on:
+      db:
+        condition: service_healthy
+      seq:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "7146:8081"
+      - "8080:8080"
+    networks:
+      - cs-backend-network
+    volumes:
+      - images:/app/wwwroot/images
+      - ${USERPROFILE}/.aspnet/https:/https:ro
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: clothing_shop_ngrok
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: http --url=https://${NGROK_DOMAIN} https://api:8081
+    networks:
+      - cs-backend-network
+    ports:
+      - "4500:4040"
+    depends_on:
+      api:
+        condition: service_started
+
+  app:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: clothing_shop_app:1.0
+    container_name: clothing_shop_app
+    env_file:
+      - ./frontend/.env
+    environment:
+      - DEV_HTTPS_KEY=/certs/localhost+2-key.pem
+      - DEV_HTTPS_CERT=/certs/localhost+2.pem
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/localhost+2-key.pem:/certs/localhost+2-key.pem:ro
+      - ./frontend/localhost+2.pem:/certs/localhost+2.pem:ro
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  db_data:
+  seq_data:
+  images:
+
+networks:
+  cs-backend-network:
+    driver: bridge
