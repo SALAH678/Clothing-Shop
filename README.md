@@ -138,9 +138,9 @@ The application is run **entirely with Docker Compose** — the database, loggin
 
 PostgreSQL, Node.js, the .NET runtime and every other service run **inside containers** — nothing else needs to be installed on the host.
 
-> **Provided for you:** the Google OAuth client ID, the Chargily **test** API key and the SMTP credentials are committed in `backend/src/Api/appsettings.Development.json`, so Google sign-in, payments and verification emails work without any extra accounts. The values *you* supply are `NGROK_AUTHTOKEN`, `NGROK_DOMAIN` and `PASSWORD`.
+> **Provided for you:** the Google OAuth client ID, the Chargily **test** API key and the SMTP credentials are committed in `backend/src/Api/appsettings.Development.json`, so Google sign-in, payments and verification emails work without any extra accounts. The values *you* supply are `NGROK_AUTHTOKEN`, `NGROK_DOMAIN`, `PASSWORD` and `SECRET_KEY`.
 
-> **⚠️ About those shared credentials.** The Google client ID is safe to publish — a client ID is a public identifier, not a secret, and it is designed to ship inside browser code. The other two are **real credentials**, and "test" does not make them harmless: anyone who can read this repository can send email as the configured SMTP account and create checkouts against the Chargily account. They are committed on purpose so the project works end to end for evaluation. If that trade-off stops being acceptable, move them out of `appsettings.Development.json` into user secrets or environment variables and rotate both the SMTP app password and the Chargily key — anything ever pushed to a public repository should be treated as compromised.
+> **⚠️ About those shared credentials.** The Google client ID is safe to publish — a client ID is a public identifier, not a secret, and it is designed to ship inside browser code. The other two committed credentials are **real credentials**, and "test" does not make them harmless: anyone who can read this repository can send email as the configured SMTP account and create checkouts against the Chargily account. They are committed on purpose so the project works end to end for evaluation. If that trade-off stops being acceptable, move them out of `appsettings.Development.json` into user secrets or environment variables and rotate both the SMTP app password and the Chargily key — anything ever pushed to a public repository should be treated as compromised.
 
 > **🚧 Scope decision — Windows only.** The API certificate is mounted from `%USERPROFILE%\.aspnet\https`, a Windows-only path, so this stack is supported on Windows and documented as such rather than pretending to be portable. Lifting the limitation is a one-line change: mount a project-relative folder instead (`./certs:/https:ro`) and place the generated certificate there, then adjust step 1.
 
@@ -164,7 +164,7 @@ Copy-Item .env.example .env
 Copy-Item frontend/.env.example frontend/.env
 ```
 
-You fill in three values in `.env` at step 3. `frontend/.env` needs no editing: it already points at `https://localhost:7146` and carries the public Google client ID.
+You fill in four values in `.env` at step 3. `frontend/.env` needs no editing: it already points at `https://localhost:7146` and carries the public Google client ID.
 
 #### 1. Generate the ASP.NET HTTPS certificate
 
@@ -194,13 +194,14 @@ This writes `localhost+2.pem` and `localhost+2-key.pem` into the current folder 
 
 #### 3. Fill in the environment files
 
-Open the `.env` you created in step 0. Only three values are required — everything else is pre-filled with a working default.
+Open the `.env` you created in step 0. Only four values are required — everything else is pre-filled with a working default.
 
 | Variable                              | Value                                                                                                      |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `PASSWORD`                            | The certificate password you chose in step 1. It must match **exactly**                                    |
 | `NGROK_AUTHTOKEN`                     | Your ngrok authtoken, from the ngrok dashboard                                                             |
 | `NGROK_DOMAIN`                        | Your reserved ngrok domain — **hostname only**, without `https://` (for example `my-store.ngrok-free.app`) |
+| `SECRET_KEY`                          | A long random string (min. 32 chars) that signs JWT access tokens — generate with `openssl rand -base64 64`, or in PowerShell `[Convert]::ToBase64String((1..64 \| ForEach-Object { Get-Random -Max 256 }))`. Zero signup friction, it just needs to exist and be sufficiently random |
 | `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Pre-filled by `.env.example`. The database runs in its own container, so these values only ever apply to it — change them if you like                             |
 | `SEQ_FIRSTRUN_ADMINUSERNAME` / `SEQ_FIRSTRUN_ADMINPASSWORD` | Pre-filled by `.env.example`. Initial admin credentials for the local Seq web interface                                             |
 | `EMAILADMIN`                          | Pre-filled with an example recipient for purchase-notification emails                                      |
@@ -251,6 +252,7 @@ The API reads its settings from `backend/src/Api/appsettings.Development.json`, 
 | `ASPNETCORE_ENVIRONMENT=Development` | Enables Swagger and the CORS policy for `https://localhost:5173` |
 | `ConnectionStrings__DefaultConnection` | Points the API at the `db` container |
 | `ASPNETCORE_Kestrel__Certificates__Default__*` | Loads the certificate generated in step 1, unlocked with `PASSWORD` |
+| `JwtSettings__SecretKey` | Overrides the committed value with your generated `SECRET_KEY`, so JWT signing/validation is unique per deployment |
 | `Serilog__WriteTo__*` | Ships logs to the `seq` container |
 | `Email__EmailAdmin` | Overrides the purchase-notification recipient with `EMAILADMIN` |
 | `Chargily__WebhookEndpointUrl` | Points the payment webhook at your ngrok domain |
@@ -319,3 +321,7 @@ To exercise a full payment: sign in, add an item to the bag, complete checkout w
 | `docs/`  | Full documentation set — architecture, backend layers, API reference, frontend guide, security and operations |
 
 ---
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
