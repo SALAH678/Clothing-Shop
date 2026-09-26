@@ -318,7 +318,8 @@ To exercise a full payment: sign in, add an item to the bag, complete checkout w
 
 | Document | Contents                                                                                                      |
 | -------- | ------------------------------------------------------------------------------------------------------------- |
-| `docs/`  | Full documentation set — architecture, backend layers, API reference, frontend guide, security and operations |
+| `docs/`    | Full documentation set — architecture, backend layers, API reference, frontend guide, security and operations |
+| `images/`  | UI screenshots of every page — storefront (home, categories, product details), auth flows, customer pages (profile, checkout), and the admin panel tabs |
 
 ---
 
