@@ -2,7 +2,7 @@
 
 This document explains the recurring design patterns used in the Clothing Shop backend: what each pattern is **in this codebase**, why it was chosen over the obvious alternative, and what it costs. Every entry names its trade-off.
 
-> Related: [`Architecture.md`](Architecture.md) for layering and request flow, [`Database-Design.md`](Database-Design.md) for persistence detail.
+> Related: [`Architecture.md`](Architecture.md) for layering and request flow, [`Api-Design.md`](Api-Design.md) for the REPR endpoint catalogue and HTTP contracts, [`Database-Design.md`](Database-Design.md) for persistence detail.
 
 > **Scope — backend only.** All patterns below describe `backend/src`. The React frontend (`frontend/src`) intentionally uses no formal design or architectural patterns — no CQRS, mediator pipeline, repository/unit-of-work, domain model, or SOLID layering. It is organized by feature folders with hooks/context for state and data-fetching only, so it is out of scope for this document.
 
@@ -20,7 +20,7 @@ This document explains the recurring design patterns used in the Clothing Shop b
 | 6 | Domain Events | `Domain/Common/DomainEvent.cs`, `DispatchDomainEventsInterceptor.cs`, `Carts/EventHandlers` | Decouple reactions from originating operation | Pre-save dispatch, no outbox |
 | 7 | Repository + Unit of Work | `Application/Common/Interfaces`, `Infrastructure` | Handlers depend on contracts, not EF Core | Abstraction overhead; no explicit transactions |
 | 8 | EF Core Interceptors | `Infrastructure/Data/Interceptors` | Timestamps plus event dispatch in one place | Save-time magic; ordering matters |
-| 9 | Thin FastEndpoints + Problem Details | `Api/Endpoints`, `Api/Extensions/ProblemExtensions.cs` | HTTP stays dumb; errors map consistently | Endpoint-per-operation boilerplate |
+| 9 | REPR (Request-Endpoint-Response) via FastEndpoints | `Api/Endpoints/*` | One operation = one endpoint class; route, auth, throttle, and docs declared together | Class-per-operation boilerplate; response schema restated per endpoint |
 | 10 | Adapter interfaces for externals | `Application/Common/Interfaces/Services`, `Infrastructure/Services` | Swap providers without touching use cases | Extra interface per integration; one Chargily leak remains |
 | 11 | .NET Options Pattern | `Infrastructure/Options`, `Infrastructure/DependencyInjection.cs` | Bind and validate configuration as typed settings | Configuration classes and mixed access paths |
 
@@ -78,11 +78,17 @@ SOLID is covered in [Section 4](#4-solid--how-the-codebase-applies-it).
 - **Why over the alternative:** the alternative sets timestamps and publishes events manually in every handler. Interceptors make the guarantee structural so no handler can forget it.
 - **Cost:** save-time magic. Behaviour is invisible at the handler call site, and ordering plus transactional semantics must be read from DI registration and interceptor code. Debugging starts in infrastructure, not application.
 
-### 2.9 Thin FastEndpoints boundary plus Problem Details
+### 2.9 REPR (Request-Endpoint-Response) via FastEndpoints
 
-- **What here:** endpoints under `Api/Endpoints` bind route, query, or body values, build a command or query, send it through MediatR, and map `Result` to `Results.Ok` or `errors.ToProblem`. See `CreatePurchase.cs` and `PaymentWebhook.cs`.
-- **Why over the alternative:** the alternative puts logic in controllers, such as price math or stock checks in the endpoint. Thin endpoints keep HTTP replaceable and force rules into domain and application code where they are testable without a web server.
-- **Cost:** one endpoint class per operation plus request and response DTOs and route groups. Route and validation rules can drift if endpoint binding and FluentValidation evolve separately.
+**REPR (Request-Endpoint-Response)** defines each API operation as its own class with three parts: a **Request**, an **Endpoint** holding a single handler method, and a **Response**. The endpoint also presents that response, and FastEndpoints is the library that implements this shape.
+
+- **What here:** **37 endpoint classes** in **7 route groups** under `Api/Endpoints/{Auth,Cart,Category,Dashboard,Product,Purchase,User}`, one file per operation. `Configure()` declares each operation's verb, route, group, roles, rate limit, uploads, and OpenAPI metadata; the handler method sends one MediatR command or query and returns `Results.Ok(...)` or `errors.ToProblem()`. Prefix, version, and Swagger tag live once per resource in a `Group` subclass, and HTTP-only concerns such as cookies and multipart parsing stay in the endpoint.
+  - **The three parts in code:** the request is usually the MediatR command or query itself, with a file-local record only where the wire shape differs (multipart uploads, `VariantsJson`, the flat checkout address); the endpoint is `Configure()` plus one handler method (`ExecuteAsync` in 35 of them, `HandleAsync` in `GetAllPurchases` and `GetOverview`); the response is an Application DTO such as `ProductDto` or `CartDto`, or an RFC 7807 problem.
+- **Why over controllers:** controllers group many actions into one class, so that class accumulates unrelated operations and shared constructor dependencies even when every action only delegates to MediatR. REPR keeps one operation per class, mirroring CQRS one-to-one: a feature is added or removed as a single file, and its route, authorization, throttling, uploads, and documentation are read together instead of being split between action attributes and policy configuration. It also keeps HTTP inside `Api` — `Application` and `Domain` have no FastEndpoints reference — so handlers stay testable without a web server. See `Api-Design.md` section 1.1 for the request path and the endpoint catalogue.
+- **Why not controllers:** MVC controllers are mature, widely used, well documented, and completely capable of hosting Clean Architecture and CQRS, so this was a fit decision rather than a quality one. MVC's unit of work models a resource; this backend is organized by use case, and REPR gives that shape directly instead of approximating it with a controller that happens to hold one action per use case.
+- **Cost:** class-per-operation boilerplate; because the response type is `IResult`, each endpoint restates its own response schema in `Produces<T>(200)`; and validation still runs later in the MediatR pipeline on the mapped command instead of at binding. The filing convention is also followed loosely here: operations sit flat inside their resource folder rather than one nested folder per use case.
+
+**In one line — the decision, as it would be stated in a review or a README:** *FastEndpoints was chosen over traditional ASP.NET Core controllers to follow the REPR (Request-Endpoint-Response) pattern, so each endpoint represents a single use case, HTTP concerns stay isolated inside `Api`, and the API structure lines up one-to-one with the project's CQRS and Clean Architecture approach.*
 
 ### 2.10 Adapter interfaces for external services
 

@@ -323,6 +323,88 @@ To exercise a full payment: sign in, add an item to the bag, complete checkout w
 
 ---
 
+## Clean Up and Uninstall
+
+Removing everything this project put on your machine is straightforward, because the application installs nothing permanently: PostgreSQL, Seq, the API, the tunnel and the frontend all run as containers. The steps below go from the disposable parts to the host tools, and every command is run from the repository root.
+
+### 1. Remove the stack, its volumes and its images
+
+```powershell
+docker compose down -v --rmi all --remove-orphans
+docker builder prune -f     # also clears the BuildKit cache left by the .NET and Node builds
+```
+
+| Removed    | What it was                                                                                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Containers | `clothing_shop_db`, `clothing_shop_seq`, `clothing_shop_api`, `clothing_shop_ngrok`, `clothing_shop_app`                                                                       |
+| Volumes    | `clothingshop_db_data` (the seeded catalogue and demo accounts), `clothingshop_seq_data` (log history), `clothingshop_images` (uploaded product and category images)             |
+| Images     | The two built here — `clothing_shop_api:1.0`, `clothing_shop_app:1.0` — plus the pulled ones: `postgres:18-alpine`, `datalust/seq:latest`, `ngrok/ngrok:latest`, `node:22-alpine` |
+
+Volume names carry the Compose project name, which is derived from the folder name, so a checkout in `Clothing Shop` produces `clothingshop_*`. If you cloned into a differently named folder, run `docker volume ls` and remove by name instead. If `docker images` still shows a build-only base image such as `mcr.microsoft.com/dotnet/sdk:10.0` — pulled by the API's Dockerfile rather than by a running service — remove it by name with `docker rmi`.
+
+> **⚠️ Do not "be thorough" with `docker system prune -a --volumes`.** It deletes every unused container, image, network **and volume** on the machine, including data belonging to unrelated projects. `docker compose down -v --rmi all` removes only what this stack created.
+
+### 2. Delete the files the setup generated
+
+```powershell
+dotnet dev-certs https --clean                    # removes %USERPROFILE%\.aspnet\https\aspnetapp.pfx
+mkcert -uninstall                                 # removes the local CA that signed the frontend certificates
+Remove-Item .\frontend\localhost+2.pem, .\frontend\localhost+2-key.pem
+Remove-Item .env, .\frontend\.env                 # your ngrok token, JWT key and certificate password
+Remove-Item -Recurse -Force .\frontend\node_modules, .\frontend\dist, .\frontend\.vite
+Get-ChildItem .\backend -Recurse -Directory -Include bin, obj | Remove-Item -Recurse -Force
+```
+
+| Item                                                     | Created by                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `%USERPROFILE%\.aspnet\https\aspnetapp.pfx`               | Setup step 1 (`dotnet dev-certs`); mounted into the API container                      |
+| `frontend\localhost+2.pem`, `frontend\localhost+2-key.pem` | Setup step 2 (mkcert); served by the Vite dev server                                   |
+| `.env` and `frontend\.env`                                | Setup step 0, copied from the `.env.example` files                                      |
+| `frontend\node_modules`, `frontend\dist`, `frontend\.vite` | Only if you ran `npm install`, `npm run build` or `npm run lint` on the host           |
+| `backend\**\bin`, `backend\**\obj`                        | Only if you built or tested the solution on the host                                    |
+
+`dotnet dev-certs https --clean` removes **every** ASP.NET development certificate on the machine, including the one setup step 1 trusted with `--trust`, and `mkcert -uninstall` removes a CA that other local projects may also trust — skip either command if something else depends on it.
+
+### 3. Uninstall the host tools
+
+Only four tools ever touch the host, and the project itself installs none of them: Docker Desktop runs the stack, the .NET SDK is used once in setup step 1, mkcert once in setup step 2, and Node.js only for the optional host-side frontend checks.
+
+| Tool                    | Uninstall                                                                                                                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| .NET SDK 10             | `winget uninstall Microsoft.DotNet.SDK.10`, or *Settings → Apps → Installed apps → Microsoft .NET SDK 10.0.401*. If it came with **Visual Studio**, remove it from the Visual Studio Installer instead so VS keeps the component it needs |
+| `dotnet-ef` global tool | `dotnet tool uninstall -g dotnet-ef`                                                                                                                                                        |
+| Node.js 22+             | `winget uninstall OpenJS.NodeJS`, or *Settings → Apps* — an MSI-installed build is listed as **Node.js**                                                                                     |
+| mkcert                  | `winget uninstall FiloSottile.mkcert`; the binary is linked into `%LOCALAPPDATA%\Microsoft\WinGet\Links`                                                                                     |
+| Docker Desktop          | `winget uninstall Docker.DockerDesktop`, or run `"C:\Program Files\Docker\Docker\Docker Desktop Installer.exe" uninstall`, then `wsl --unregister docker-desktop` to delete its WSL distribution |
+
+`ngrok` has no host installation at all — the stack runs the `ngrok/ngrok` image — and **do not** unregister the `Ubuntu` WSL distribution, because Docker Desktop did not create it.
+
+### 4. Revoke the credentials and accounts you created
+
+- **ngrok** — delete the reserved domain and rotate the authtoken at [dashboard.ngrok.com](https://dashboard.ngrok.com/); an authtoken is a credential, and a reserved domain can only ever be bound by one agent.
+- **Chargily and SMTP** — the Chargily *test* key and the SMTP credentials are committed in `backend/src/Api/appsettings.Development.json`, so rotate anything you supplied yourself.
+- **Google** — if you signed in with Google on the storefront, revoke this application at [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
+- **Demo accounts** — `demo.admin@gmail.com` and `demo.customer@gmail.com` exist only inside the `clothingshop_db_data` volume, which step 1 already deleted.
+
+### 5. Verify, then delete the folder
+
+```powershell
+docker volume ls        # expect no clothingshop_* entries
+docker ps -a            # expect no clothing_shop_* containers
+dotnet --list-sdks      # empty once the SDK is gone
+```
+
+Nothing should answer on `https://localhost:5173`, `https://localhost:7146`, `http://localhost:5341` or `http://localhost:4500`. The last item to remove is the folder itself:
+
+```powershell
+cd ..
+Remove-Item -Recurse -Force "Clothing Shop"
+```
+
+Nothing from this project then remains: no container, volume, image, certificate, environment file, host tool or credential.
+
+---
+
 ## License
 
 This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
