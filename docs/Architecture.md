@@ -63,10 +63,10 @@ The dependency declarations can be inspected in:
 
 ### Main responsibilities
 
-- Aggregate/entity definitions.
+- Aggregate and entity definitions, including the aggregate boundaries that group them (see [§3.2](#32-aggregates-and-aggregate-roots)).
 - Entity identity and equality.
-- Business invariants.
-- Value objects and their validation.
+- Business invariants enforced by the methods that own each piece of state.
+- Value objects and their validation (see [§3.3](#33-value-objects)).
 - Domain-specific errors.
 - Domain events.
 - Shared auditing primitives.
@@ -89,6 +89,7 @@ The dependency declarations can be inspected in:
 3. Public methods enforce state changes and domain invariants.
 4. Expected domain failures are represented explicitly, normally through `Result` and domain-specific `Error` values.
 5. State changes that affect other parts of the model are expressed as domain events when appropriate.
+6. Related entities are changed through the aggregate root that owns them rather than directly; the roots and their boundaries are listed in [§3.2](#32-aggregates-and-aggregate-roots).
 
 The key distinction is that the domain is not merely a collection of database-shaped classes. It is the layer responsible for deciding whether an operation is valid and how the business model changes.
 
@@ -245,9 +246,19 @@ For example, changing a product's name or price does not change its `Id`. Equali
 
 `Domain/Common/AuditableEntity.cs` adds creation and modification timestamps to persisted business records. Infrastructure populates those values through the auditing interceptor.
 
-## 3.2 Value objects
+## 3.2 Aggregates and aggregate roots
 
-Value objects represent concepts validated by value rather than identity. Examples include concepts such as email addresses, passwords, phone numbers, and addresses.
+An aggregate is a cluster of entities that changes together, and its root is the only member that outside code may hold and modify; the root owns the invariants of everything inside it.
+
+The root is a **role here, not a base class**: there is no `AggregateRoot` type, and all 13 concrete entities derive from `AuditableEntity`. The roots are `Product` (`Variant`, `Image`), `Cart` (`CartItem`), `Purchase` (`PurchaseItem`, `Payment`), `User` (`Account`, `RefreshToken`, `VerificationToken`), and `Category` (child categories), each changing its children only through its own methods such as `Product.AddVariant` or `Cart.AddItem`. Domain events are collected on `Entity` itself, so any entity may raise one, but in practice the root decides that a state change happened.
+
+The boundary is a convention rather than an enforcement: `IUnitOfWork` also exposes child repositories, and checkout changes `Purchase`, `Payment`, and `Variant` stock in one `SaveChangesAsync`. See `Patterns-Decisions.md` §2.7 and trade-off 6.
+
+## 3.3 Value objects
+
+Value objects represent concepts validated by value rather than identity. The project has four: `Address`, `Email`, `Password`, and `PhoneNumber`, all under `Domain/Common/ValueObjects`.
+
+They follow one shape: a private constructor, private setters, and a static `Create(...)` factory returning `Result<T>` with a domain-specific error, so an invalid instance cannot exist and failure is returned rather than thrown. `Email` validates by regular expression, `Password` enforces complexity, `PhoneNumber` matches the Algerian mobile format, and `Address` requires street, city, and wilaya.
 
 A value object is appropriate when:
 
@@ -256,9 +267,14 @@ A value object is appropriate when:
 - Invalid states should be rejected during construction or creation.
 - The object is safer when behaviour and validation travel with the data.
 
+Two honest notes on the current implementation:
+
+- **They are plain classes, not records, and none override `Equals`/`GetHashCode`.** They therefore inherit reference equality, so the "two instances with equal values are the same value" property does not actually hold at runtime. Comparisons in the codebase go through `.Value`, and the value objects are used as validated payloads rather than as dictionary keys or set members.
+- **They share no base type or `IValueObject` interface**, so the shape is a convention rather than an enforced contract.
+
 Some value objects are persisted inline through EF Core value conversions or owned types rather than as separate tables.
 
-## 3.3 Result and error model
+## 3.4 Result and error model
 
 The domain provides `Result`, `Result<T>`, and `Error` to distinguish expected failures from exceptional failures.
 
@@ -272,7 +288,7 @@ This supports flows such as:
 
 HTTP concerns are not placed in the domain. The API decides which status code and Problem Details payload should represent each error when the result reaches the endpoint boundary.
 
-## 3.4 Domain events
+## 3.5 Domain events
 
 Domain events represent facts that have already happened in the domain, such as a user being created. They allow a primary operation to be separated from a secondary reaction without tightly coupling the two.
 
@@ -583,6 +599,7 @@ These are implementation details to preserve consciously rather than assumptions
 | Domain entities and rules | `backend/src/Domain` |
 | Result and error model | `backend/src/Domain/Common/Results` |
 | Domain events | `backend/src/Domain/Common/DomainEvent.cs` |
+| Value objects | `backend/src/Domain/Common/ValueObjects` |
 | Feature use cases | `backend/src/Application/Features` |
 | MediatR and validation pipeline | `backend/src/Application/DependencyInjection.cs` |
 | Request behaviours | `backend/src/Application/Common/Behaviours` |
