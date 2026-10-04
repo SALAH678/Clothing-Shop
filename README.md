@@ -129,8 +129,8 @@ The application is run **entirely with Docker Compose** — the database, loggin
 
 | Requirement                                                       | Why it is needed                                                                                              |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Windows**                                                       | The Compose stack mounts the API certificate from `%USERPROFILE%\.aspnet\https`, which is a Windows-only path |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Runs the whole stack (Docker Engine + Compose v2)                                                             |
+| **Windows, macOS or Linux**                                        | The stack runs on all three. Exactly one setting is OS-specific: Compose mounts the API certificate from `${USERPROFILE}/.aspnet/https`, so on macOS and Linux you export `USERPROFILE=$HOME` before starting the stack (see [step 1](#1-generate-the-aspnet-https-certificate)) |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) — or Docker Engine with the Compose v2 plugin | Runs the whole stack (Docker Engine + Compose v2)                                                             |
 | [.NET SDK](https://dotnet.microsoft.com/download) **10.0**        | Used once to generate the ASP.NET HTTPS development certificate                                               |
 | [mkcert](https://github.com/FiloSottile/mkcert)                   | Generates the local HTTPS certificates the frontend dev server requires                                       |
 | An [ngrok](https://ngrok.com/) account                            | Provides the public HTTPS URL that lets Chargily reach the payment webhook                                    |
@@ -142,7 +142,13 @@ PostgreSQL, Node.js, the .NET runtime and every other service run **inside conta
 
 > **⚠️ About those shared credentials.** The Google client ID is safe to publish — a client ID is a public identifier, not a secret, and it is designed to ship inside browser code. The other two committed credentials are **real credentials**, and "test" does not make them harmless: anyone who can read this repository can send email as the configured SMTP account and create checkouts against the Chargily account. They are committed on purpose so the project works end to end for evaluation. If that trade-off stops being acceptable, move them out of `appsettings.Development.json` into user secrets or environment variables and rotate both the SMTP app password and the Chargily key — anything ever pushed to a public repository should be treated as compromised.
 
-> **🚧 Scope decision — Windows only.** The API certificate is mounted from `%USERPROFILE%\.aspnet\https`, a Windows-only path, so this stack is supported on Windows and documented as such rather than pretending to be portable. Lifting the limitation is a one-line change: mount a project-relative folder instead (`./certs:/https:ro`) and place the generated certificate there, then adjust step 1.
+> **Portability note — one variable decides the OS support.** The API certificate reaches the container through the Compose bind mount `${USERPROFILE}/.aspnet/https:/https:ro`. `USERPROFILE` is a Windows variable, so on macOS and Linux set it to your home directory before `docker compose up`:
+>
+> ```bash
+> export USERPROFILE="$HOME"      # add to ~/.zshrc or ~/.bashrc to make it permanent
+> ```
+>
+> That single export is what removes the Windows-only limitation — everything else in this README already works unchanged on macOS and Linux. Two alternatives avoid the variable altogether: edit `compose.yaml` to mount `${HOME}/.aspnet/https:/https:ro` (macOS/Linux) or `./certs:/https:ro` (project-relative, works everywhere, with the certificate placed in `./certs`).
 
 ## Running the Application
 
@@ -152,7 +158,9 @@ Everything runs as containers: PostgreSQL, Seq (the log server), the API, an ngr
 
 #### 0. Clone the repository and create the environment files
 
-```powershell
+The clone is the same on every platform:
+
+```bash
 git clone <repository-url>
 cd "Clothing Shop"
 ```
@@ -160,37 +168,83 @@ cd "Clothing Shop"
 Neither environment file is committed — both are gitignored — so create them from the examples that ship with the repo:
 
 ```powershell
+# Windows (PowerShell)
 Copy-Item .env.example .env
 Copy-Item frontend/.env.example frontend/.env
+```
+
+```bash
+# macOS / Linux (bash or zsh)
+cp .env.example .env
+cp frontend/.env.example frontend/.env
 ```
 
 You fill in four values in `.env` at step 3. `frontend/.env` needs no editing: it already points at `https://localhost:7146` and carries the public Google client ID.
 
 #### 1. Generate the ASP.NET HTTPS certificate
 
-The API serves HTTPS from a certificate that Compose mounts into the container, and that certificate is protected by a password. Choose a password now — it is the `PASSWORD` value you write into `.env` at step 3.
+The API serves HTTPS from a certificate that Compose mounts into the container, and that certificate is protected by a password. Choose a password now — it is the `PASSWORD` value you write into `.env` at step 3. Where the certificate is written is the one OS-specific detail of the whole setup, because the Compose mount reads it from `$USERPROFILE/.aspnet/https` on every platform.
 
-In PowerShell:
+**Windows (PowerShell):**
 
 ```powershell
 dotnet dev-certs https --trust
 dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\aspnetapp.pfx" -p <your-password>
 ```
 
-`--trust` makes `https://localhost:7146` trusted by your browser. Run it once per machine; it shows a confirmation prompt.
+**macOS (bash or zsh):**
+
+```bash
+dotnet dev-certs https --trust
+dotnet dev-certs https -ep "$HOME/.aspnet/https/aspnetapp.pfx" -p <your-password>
+export USERPROFILE="$HOME"      # only needed if you did not change the mount in compose.yaml
+```
+
+On macOS, `--trust` adds the certificate to your login keychain and asks for your keychain password.
+
+**Linux (bash or zsh):**
+
+```bash
+mkdir -p "$HOME/.aspnet/https"
+dotnet dev-certs https -ep "$HOME/.aspnet/https/aspnetapp.pfx" -p <your-password>
+export USERPROFILE="$HOME"      # only needed if you did not change the mount in compose.yaml
+```
+
+`.NET` does **not** support `dotnet dev-certs https --trust` on Linux — the command prints a warning and the certificate is created but left untrusted. The stack still runs, because the container only needs the `.pfx` to serve HTTPS; the browser will simply warn on `https://localhost:7146` until you trust it yourself:
+
+```bash
+# Optional: system-wide trust (Debian/Ubuntu) to silence the browser warning on the API origin
+sudo dotnet dev-certs https -ep /usr/local/share/ca-certificates/aspnet-dev.crt --format PEM
+sudo update-ca-certificates
+```
+
+Chrome and Firefox on Linux read their own NSS database, so they may still warn even after the system store is updated. Install `libnss3-tools` and import the certificate there too:
+
+```bash
+dotnet dev-certs https -ep "$HOME/.aspnet/https/aspnet-dev.pem" --format PEM
+certutil -d "sql:$HOME/.pki/nssdb" -A -t "C,," -n "ASP.NET dev" -i "$HOME/.aspnet/https/aspnet-dev.pem"
+```
+
+Run `--trust` (Windows/macOS) or the trust steps above (Linux) once per machine. The password you pass to `-p` must match `PASSWORD` in `.env` **exactly** on every platform, or the `api` container restarts in a loop.
 
 #### 2. Generate the frontend HTTPS certificates
 
-The frontend dev server must serve HTTPS from the exact origin `https://localhost:5173`, because that is the only origin the API's CORS policy allows.
+The frontend dev server must serve HTTPS from the exact origin `https://localhost:5173`, because that is the only origin the API's CORS policy allows. The commands are identical on all three platforms:
 
-```powershell
+```bash
 mkcert -install
 mkcert localhost 127.0.0.1 ::1
 ```
 
-This writes `localhost+2.pem` and `localhost+2-key.pem` into the current folder — move both into `frontend/`.
+This writes `localhost+2.pem` and `localhost+2-key.pem` into the current folder — move both into `frontend/` (the copy commands in step 0 show the PowerShell and bash forms).
 
-> Certificates are machine-specific: only the machine that generated them trusts them, so every user generates their own pair.
+| OS | What `mkcert -install` does |
+| --- | --- |
+| Windows | Adds the local CA to the Windows trust store; no elevation required |
+| macOS | Adds it to your login keychain and asks for the keychain password the first time |
+| Linux | Adds it to the system and NSS stores. Install the NSS tools first — `sudo apt install libnss3-tools` (Debian/Ubuntu) or `sudo dnf install nss-tools` (Fedora) — otherwise Chrome and Firefox will not trust the frontend origin |
+
+> Certificates are machine-specific: only the machine that generated them trusts them, so every user generates their own pair. Note that these are a **second** certificate authority, separate from the ASP.NET development certificate in step 1: `mkcert` covers the frontend origin `https://localhost:5173`, while the dev certificate covers the API origin `https://localhost:7146`.
 
 #### 3. Fill in the environment files
 
@@ -347,6 +401,7 @@ Volume names carry the Compose project name, which is derived from the folder na
 ### 2. Delete the files the setup generated
 
 ```powershell
+# Windows (PowerShell)
 dotnet dev-certs https --clean                    # removes %USERPROFILE%\.aspnet\https\aspnetapp.pfx
 mkcert -uninstall                                 # removes the local CA that signed the frontend certificates
 Remove-Item .\frontend\localhost+2.pem, .\frontend\localhost+2-key.pem
@@ -355,13 +410,23 @@ Remove-Item -Recurse -Force .\frontend\node_modules, .\frontend\dist, .\frontend
 Get-ChildItem .\backend -Recurse -Directory -Include bin, obj | Remove-Item -Recurse -Force
 ```
 
+```bash
+# macOS / Linux (bash or zsh)
+dotnet dev-certs https --clean                    # removes ~/.aspnet/https/aspnetapp.pfx
+mkcert -uninstall                                 # removes the local CA that signed the frontend certificates
+rm -f frontend/localhost+2.pem frontend/localhost+2-key.pem
+rm -f .env frontend/.env                          # your ngrok token, JWT key and certificate password
+rm -rf frontend/node_modules frontend/dist frontend/.vite
+find backend -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+```
+
 | Item                                                     | Created by                                                                            |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `%USERPROFILE%\.aspnet\https\aspnetapp.pfx`               | Setup step 1 (`dotnet dev-certs`); mounted into the API container                      |
-| `frontend\localhost+2.pem`, `frontend\localhost+2-key.pem` | Setup step 2 (mkcert); served by the Vite dev server                                   |
-| `.env` and `frontend\.env`                                | Setup step 0, copied from the `.env.example` files                                      |
-| `frontend\node_modules`, `frontend\dist`, `frontend\.vite` | Only if you ran `npm install`, `npm run build` or `npm run lint` on the host           |
-| `backend\**\bin`, `backend\**\obj`                        | Only if you built or tested the solution on the host                                    |
+| `%USERPROFILE%\.aspnet\https\aspnetapp.pfx` (Windows) / `~/.aspnet/https/aspnetapp.pfx` (macOS, Linux) | Setup step 1 (`dotnet dev-certs`); mounted into the API container |
+| `frontend/localhost+2.pem`, `frontend/localhost+2-key.pem` | Setup step 2 (mkcert); served by the Vite dev server                                   |
+| `.env` and `frontend/.env`                                | Setup step 0, copied from the `.env.example` files                                      |
+| `frontend/node_modules`, `frontend/dist`, `frontend/.vite` | Only if you ran `npm install`, `npm run build` or `npm run lint` on the host           |
+| `backend/**/bin`, `backend/**/obj`                        | Only if you built or tested the solution on the host                                    |
 
 `dotnet dev-certs https --clean` removes **every** ASP.NET development certificate on the machine, including the one setup step 1 trusted with `--trust`, and `mkcert -uninstall` removes a CA that other local projects may also trust — skip either command if something else depends on it.
 
@@ -377,7 +442,21 @@ Only four tools ever touch the host, and the project itself installs none of the
 | mkcert                  | `winget uninstall FiloSottile.mkcert`; the binary is linked into `%LOCALAPPDATA%\Microsoft\WinGet\Links`                                                                                     |
 | Docker Desktop          | `winget uninstall Docker.DockerDesktop`, or run `"C:\Program Files\Docker\Docker\Docker Desktop Installer.exe" uninstall`, then `wsl --unregister docker-desktop` to delete its WSL distribution |
 
-`ngrok` has no host installation at all — the stack runs the `ngrok/ngrok` image — and **do not** unregister the `Ubuntu` WSL distribution, because Docker Desktop did not create it.
+The table above covers Windows. On macOS and Linux the same four tools come from a package manager instead, and the exact names depend on how you installed them:
+
+```bash
+# macOS (Homebrew)
+brew uninstall --cask docker        # without Docker Desktop: brew uninstall docker colima
+brew uninstall dotnet-sdk mkcert node
+dotnet tool uninstall -g dotnet-ef
+
+# Debian / Ubuntu (apt)
+sudo apt remove dotnet-sdk-10.0 nodejs mkcert
+sudo apt remove docker-ce docker-ce-cli containerd.io docker-compose-plugin
+dotnet tool uninstall -g dotnet-ef
+```
+
+`ngrok` has no host installation on any platform — the stack runs the `ngrok/ngrok` image — and on Windows **do not** unregister the `Ubuntu` WSL distribution, because Docker Desktop did not create it.
 
 ### 4. Revoke the credentials and accounts you created
 
@@ -397,8 +476,15 @@ dotnet --list-sdks      # empty once the SDK is gone
 Nothing should answer on `https://localhost:5173`, `https://localhost:7146`, `http://localhost:5341` or `http://localhost:4500`. The last item to remove is the folder itself:
 
 ```powershell
+# Windows (PowerShell)
 cd ..
 Remove-Item -Recurse -Force "Clothing Shop"
+```
+
+```bash
+# macOS / Linux (bash or zsh)
+cd ..
+rm -rf "Clothing Shop"
 ```
 
 Nothing from this project then remains: no container, volume, image, certificate, environment file, host tool or credential.
