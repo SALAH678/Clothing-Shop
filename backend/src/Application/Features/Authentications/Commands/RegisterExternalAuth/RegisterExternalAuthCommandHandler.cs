@@ -65,33 +65,36 @@ public class RegisterExternalAuthCommandHandler(IOAuthService oAuthService, IUni
         if (emailResult.IsError)
             return emailResult.TopError;
 
-        // 4. Make sure a User with this email doesn't already exist
-
-        var existingUser = await unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
-
-        if (existingUser is not null)
-            return ApplicationErrors.UserAlreadyExists;
-
-        // 5. Validate phone number
+        // 4. Validate phone number
 
         var phoneResult = PhoneNumber.Create(request.PhoneNumber);
 
         if (phoneResult.IsError)
             return phoneResult.TopError;
 
-        // 6. Create User
+        // 5. Check if user already exists with local account or not
 
-        var userResult = User.Create(googleInfo.FirstName, googleInfo.LastName, emailResult.Value, phoneResult.Value);
+        var existingUserWithLocalAccount = await unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
+        User? user;
 
-        if (userResult.IsError)
-            return userResult.TopError;
+        if (existingUserWithLocalAccount is null)
+        {
+            // 6. Create User
 
-        var user = userResult.Value;
+            var userResult = User.Create(googleInfo.FirstName, googleInfo.LastName, emailResult.Value, phoneResult.Value);
 
-        // Google already verified the email.
-        user.MarkEmailVerified();
+            if (userResult.IsError)
+                return userResult.TopError;
 
-        unitOfWork.Users.Create(user);
+            user = userResult.Value;
+
+            // Google already verified the email.
+            user!.MarkEmailVerified();
+
+            unitOfWork.Users.Create(user);
+        }
+        else
+            user = existingUserWithLocalAccount;     
 
         // 7. Create Google Account
 

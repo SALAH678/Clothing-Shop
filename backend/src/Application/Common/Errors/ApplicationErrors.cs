@@ -118,4 +118,7 @@ public static class ApplicationErrors
     public static Error VariantNotFound => Error.NotFound(
         code: "Variant_Not_Found",
         description: "The specified variant was not found.");
+    public static Error AccountNotRegistered => Error.Conflict(
+        code: "Account_Not_Registered",
+        description: "The account is not registered.");
 }

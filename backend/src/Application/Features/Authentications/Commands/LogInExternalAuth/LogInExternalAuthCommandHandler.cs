@@ -55,7 +55,7 @@ public class LogInExternalAuthCommandHandler(IOAuthService oAuthService, IUnitOf
         {
             // Google account already linked
 
-            user = await unitOfWork.Users.GetByIdAsync( account.UserId, cancellationToken);
+            user = await unitOfWork.Users.GetByIdAsync(account.UserId, cancellationToken);
 
             if (user is null)
             {
@@ -66,37 +66,12 @@ public class LogInExternalAuthCommandHandler(IOAuthService oAuthService, IUnitOf
             }
         }
         else
-        {
-            // Google account is NOT linked
-
-            var emailResult = Email.Create(googleInfo.Email);
-
-            if (emailResult.IsError)
-                return emailResult.TopError;
-
-            user = await unitOfWork.Users.GetByEmailAsync(emailResult.Value, cancellationToken);
-
-            if (user is null)
-            {
-                return ApplicationErrors.UserNotFound;
-            }
-
-            // Automatically link Google to existing User
-
-            var accountResult = Account.Create(user.Id, "Google", googleInfo.ProviderAccountId);
-
-            if (accountResult.IsError)
-                return accountResult.TopError;
-
-            unitOfWork.Accounts.Create(accountResult.Value);
-
-            logger.LogInformation("Google account automatically linked to UserId {UserId}", user.Id);
-        }
+            return ApplicationErrors.AccountNotRegistered;
 
         // 3. Generate JWT + Refresh Token
 
         var tokensResult = tokenProvider.GenerateJwtToken(
-            user.Id.ToString(),
+            user!.Id.ToString(),
             user.Email.Value,
             user.UserRole.ToString());
 
