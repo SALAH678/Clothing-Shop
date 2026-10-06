@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
+import heroImage from "../../assets/hero.jpg";
 
-// Above-the-fold hero art. Override with `VITE_HERO_IMAGE_URL` (a self-hosted
-// `/hero.webp` is strongly preferred) so the landing page never depends on a
-// third-party CDN URL that can expire.
-const HERO_IMAGE_URL: string =
-  import.meta.env.VITE_HERO_IMAGE_URL ??
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAt90_xb8iwT_I-40c7M0cUYPrnHeyhh1k0soG_UEi38muNMi9oJckkDl5dfReaadlJA9t-xRqCQDqRE2Yr7T70tV6L_vv_34KCVTtUkuCQL5SJZ1sPrTO0144ICggxUIKiusYsKqF1fQX-0Dl1fY-OedDWIjJSq4ZdrZxke_yxqdrNLzMNgKdvVTfSwq_eGP9MW4RKHqIjRq7o4uojrarGcQA6u-gEX2fCoK8KFrHRhtqmLcCkGUPZEg";
+// Above-the-fold hero art, bundled from `src/assets/hero.jpg` so the landing
+// page never depends on a third-party CDN URL that can expire. Override with
+// `VITE_HERO_IMAGE_URL` if a different image is ever needed.
+const HERO_IMAGE_URL: string = import.meta.env.VITE_HERO_IMAGE_URL ?? heroImage;
 
 export default function Hero() {
   return (
