@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
@@ -41,6 +42,19 @@ export default function Register() {
   const googleRateLimit = useRateLimit(googleError);
   const isRateLimited = registerRateLimit.active || googleRateLimit.active;
 
+  // When the account's email is already verified (e.g. a returning
+  // Google-linked user), the API answers "Registration successful. Your email
+  // is already verified." instead of the check-your-inbox message. There is no
+  // code to enter in that case, so show the notice briefly and continue to the
+  // sign-in page instead of opening the verify-email screen.
+  const [verifiedNotice, setVerifiedNotice] = useState("");
+
+  useEffect(() => {
+    if (!verifiedNotice) return;
+    const timer = setTimeout(() => navigate("/auth/login", { replace: true }), 2500);
+    return () => clearTimeout(timer);
+  }, [verifiedNotice, navigate]);
+
   const onSubmit = (data: RegisterFormValues) => {
     registerUser(
       {
@@ -51,7 +65,11 @@ export default function Register() {
         password: data.password,
       },
       {
-        onSuccess: () => {
+        onSuccess: (message: string) => {
+          if (message?.toLowerCase().includes("already verified")) {
+            setVerifiedNotice("Registration successful. Your email is already verified. Taking you to sign in...");
+            return;
+          }
           navigate("/auth/verify-email", { state: { email: data.email } });
         },
       },
@@ -200,6 +218,11 @@ export default function Register() {
                 lowercase letter, one number, and one special character.
               </p>
             </div>
+            {verifiedNotice && (
+              <div className="p-3 bg-green-50 border-2 border-green-500 font-mono text-xs font-bold text-green-700 uppercase">
+                {verifiedNotice}
+              </div>
+            )}
             {registerError && !registerRateLimit.active && (
               <div className="p-3 bg-red-50 border-2 border-red-500 font-mono text-xs font-bold text-red-600 uppercase">
                 {(registerError as ApiErrorResponse)?.response?.data?.detail ||
@@ -217,7 +240,7 @@ export default function Register() {
 
             <div className="pt-4 space-y-4">
               <button
-                disabled={isPending || isRateLimited}
+                disabled={isPending || isRateLimited || !!verifiedNotice}
                 className="w-full bg-primary text-white border-2 border-primary py-4 font-mono text-lg uppercase font-black tracking-widest hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#000] hover:bg-white hover:text-black transition-all duration-200 active:translate-y-0 active:translate-x-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
               >
