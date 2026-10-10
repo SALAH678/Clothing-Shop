@@ -152,6 +152,47 @@ PostgreSQL, Node.js, the .NET runtime and every other service run **inside conta
 
 ## Running the Application
 
+### Quick start — run the setup script
+
+You can set the application up in two ways: **manually**, by following the [Docker Compose](#docker-compose) steps below, or by running the setup script in [`scripts/`](scripts/), which performs exactly steps 0–5 for you and prompts only for the values only you can supply.
+
+The prerequisites are the same as in [Prerequisites](#prerequisites) — Docker Desktop, the .NET 10 SDK and mkcert must be installed — and you need your [ngrok](https://ngrok.com/) authtoken and reserved domain at hand.
+
+**Windows (PowerShell)** — `scripts\setup.ps1`:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass   # only needed if script execution is blocked on your machine
+.\scripts\setup.ps1
+```
+
+**macOS / Linux (bash)** — `scripts/setup.sh`:
+
+```bash
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+What the script does, step by step:
+
+| README step | Script behaviour |
+| --- | --- |
+| 0 | Creates `.env` and `frontend/.env` from the committed `.example` files (existing files are never overwritten) |
+| 1 | Runs `dotnet dev-certs https --trust` and exports `aspnetapp.pfx` — an existing certificate is reused, and re-generated only when the password you supply no longer opens it |
+| 2 | Runs `mkcert -install` and generates `frontend/localhost+2.pem` / `frontend/localhost+2-key.pem` (kept when already present) |
+| 3 | Prompts for the certificate password, ngrok authtoken and ngrok domain — pressing <kbd>Enter</kbd> keeps the value already stored in `.env` — and generates a random `SECRET_KEY` when it is still a placeholder |
+| 4 | Starts the stack with `docker compose up --build -d` |
+| 5 | Prints every service URL and the demo accounts |
+
+Options:
+
+| PowerShell | Bash | Effect |
+| --- | --- | --- |
+| `-SkipStart` | `--skip-start` | Do everything except `docker compose up --build -d` |
+| `-SkipTrust` | `--skip-trust` | Skip `dotnet dev-certs https --trust` (the script already skips it automatically on Linux, where .NET does not support it) |
+| `-CertificatePassword`, `-NgrokAuthtoken`, `-NgrokDomain` | – | Supply the prompted values and run fully non-interactively |
+
+The script is safe to re-run at any time. On macOS and Linux it exports `USERPROFILE=$HOME` for the duration of the run so the Compose certificate mount works — add `export USERPROFILE="$HOME"` to your `~/.zshrc` or `~/.bashrc` (see the portability note in [Prerequisites](#prerequisites)) if you also want to run `docker compose` commands yourself afterwards.
+
 ### Docker Compose
 
 Everything runs as containers: PostgreSQL, Seq (the log server), the API, an ngrok tunnel and the frontend dev server.
