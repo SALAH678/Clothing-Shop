@@ -86,7 +86,7 @@ services:
   app:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: development.Dockerfile
     image: clothing_shop_app:1.0
     container_name: clothing_shop_app
     env_file:

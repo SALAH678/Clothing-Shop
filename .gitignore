@@ -61,3 +61,13 @@ Thumbs.db
 # =========================
 
 .vscode/
+
+# Secrets / certs
+*.pem
+*.pfx
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+logs/

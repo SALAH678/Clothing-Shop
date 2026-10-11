@@ -1,0 +1,114 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: clothing_shop_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - cs-backend-network
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  seq:
+    image: datalust/seq:2025          # pin a version instead of :latest
+    container_name: clothing_shop_seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_FIRSTRUN_ADMINUSERNAME}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD}
+    ports:
+      - "127.0.0.1:5341:80"           # localhost only; reach it via SSH tunnel
+    networks:
+      - cs-backend-network
+    volumes:
+      - seq_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: clothing_shop_api:1.0
+    container_name: clothing_shop_api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - JwtSettings__SecretKey=${SECRET_KEY}
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - Serilog__WriteTo__0__Name=Seq
+      - Serilog__WriteTo__0__Args__serverUrl=http://seq:80
+      - Email__EmailAdmin=${EMAILADMIN}
+      - Chargily__WebhookEndpointUrl=https://${DOMAIN}/api/purchases/webhook/payment
+    depends_on:
+      db:
+        condition: service_healthy
+      seq:
+        condition: service_healthy
+    expose:
+      - "8080"                        # reachable by Caddy only, not published
+    networks:
+      - cs-backend-network
+    volumes:
+      - images:/app/wwwroot/images
+
+  app:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    image: clothing_shop_app:1.0
+    container_name: clothing_shop_app
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - cs-backend-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: clothing_shop_caddy
+    restart: unless-stopped
+    environment:
+      - DOMAIN=${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"                 # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data              # certificates live here; keep it persistent
+      - caddy_config:/config
+    depends_on:
+      - api
+      - app
+    networks:
+      - cs-backend-network
+
+volumes:
+  db_data:
+  seq_data:
+  images:
+  caddy_data:
+  caddy_config:
+
+networks:
+  cs-backend-network:
+    driver: bridge
