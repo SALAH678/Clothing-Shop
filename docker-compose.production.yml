@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:18-alpine
@@ -11,6 +17,7 @@ services:
       - cs-backend-network
     volumes:
       - db_data:/var/lib/postgresql
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -19,7 +26,7 @@ services:
       start_period: 10s
 
   seq:
-    image: datalust/seq:2025          # pin a version instead of :latest
+    image: datalust/seq:2025
     container_name: clothing_shop_seq
     restart: unless-stopped
     environment:
@@ -32,6 +39,7 @@ services:
       - cs-backend-network
     volumes:
       - seq_data:/data
+    logging: *default-logging
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 10s
@@ -62,52 +70,51 @@ services:
       seq:
         condition: service_healthy
     expose:
-      - "8080"                        # reachable by Caddy only, not published
+      - "8080"                        # reachable by nginx only, not published
     networks:
       - cs-backend-network
     volumes:
       - images:/app/wwwroot/images
+    logging: *default-logging
 
-  app:
+  web:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: production.Dockerfile
       args:
         VITE_API_URL: /api
-    image: clothing_shop_app:1.0
-    container_name: clothing_shop_app
+    image: clothing_shop_web:1.0
+    container_name: clothing_shop_web
     restart: unless-stopped
-    expose:
-      - "80"
-    networks:
-      - cs-backend-network
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: clothing_shop_caddy
-    restart: unless-stopped
-    environment:
-      - DOMAIN=${DOMAIN}
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"                 # HTTP/3
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data              # certificates live here; keep it persistent
-      - caddy_config:/config
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
     depends_on:
       - api
-      - app
     networks:
       - cs-backend-network
+    logging: *default-logging
+
+  certbot:
+    image: certbot/certbot
+    container_name: clothing_shop_certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
+    logging: *default-logging
 
 volumes:
   db_data:
   seq_data:
   images:
-  caddy_data:
-  caddy_config:
+  certbot_conf:
+  certbot_www:
 
 networks:
   cs-backend-network:
