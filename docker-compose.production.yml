@@ -17,6 +17,7 @@ services:
       - cs-backend-network
     volumes:
       - db_data:/var/lib/postgresql
+    mem_limit: 384m
     logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
@@ -33,8 +34,9 @@ services:
       ACCEPT_EULA: "Y"
       SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_FIRSTRUN_ADMINUSERNAME}
       SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD}
+    mem_limit: 384m
     ports:
-      - "127.0.0.1:5341:80"           # localhost only; reach it via SSH tunnel
+      - "127.0.0.1:5341:80" # localhost only; reach it via SSH tunnel
     networks:
       - cs-backend-network
     volumes:
@@ -59,18 +61,26 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - JwtSettings__SecretKey=${SECRET_KEY}
+      - JwtSettings__Issuer=https://${DOMAIN}
+      - JwtSettings__Audience=https://${DOMAIN}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
-      - Serilog__WriteTo__0__Name=Seq
-      - Serilog__WriteTo__0__Args__serverUrl=http://seq:80
+      - Serilog__WriteTo__1__Name=Seq
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+      - Email__Username=${EMAIL_USERNAME}
+      - Email__Password=${EMAIL_PASSWORD}
       - Email__EmailAdmin=${EMAILADMIN}
+      - Chargily__ApiSecretKey=${CHARGILY_API_SECRET_KEY}
       - Chargily__WebhookEndpointUrl=https://${DOMAIN}/api/purchases/webhook/payment
+      - Chargily__SuccessRedirectBaseUrl=https://${DOMAIN}/checkout/success
+      - Chargily__FailureRedirectBaseUrl=https://${DOMAIN}/checkout/failed
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy
       seq:
-        condition: service_healthy
+        condition: service_started
     expose:
-      - "8080"                        # reachable by nginx only, not published
+      - "8080" # reachable by nginx only, not published
     networks:
       - cs-backend-network
     volumes:
@@ -86,6 +96,8 @@ services:
     image: clothing_shop_web:1.0
     container_name: clothing_shop_web
     restart: unless-stopped
+    command: ["/bin/sh", "-c", "while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g 'daemon off;'"]
+    mem_limit: 64m
     ports:
       - "80:80"
       - "443:443"
@@ -103,6 +115,7 @@ services:
     image: certbot/certbot
     container_name: clothing_shop_certbot
     restart: unless-stopped
+    mem_limit: 128m
     volumes:
       - certbot_conf:/etc/letsencrypt
       - certbot_www:/var/www/certbot

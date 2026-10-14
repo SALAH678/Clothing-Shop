@@ -19,5 +19,7 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 COPY --from=build /app .
+RUN mkdir -p /app/wwwroot/images && chown -R app /app/wwwroot
+USER app
 ENTRYPOINT ["dotnet", "Api.dll"]
 
